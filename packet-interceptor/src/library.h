@@ -1,8 +1,9 @@
 #ifndef PACKET_INTERCEPTOR_LIBRARY_H
 #define PACKET_INTERCEPTOR_LIBRARY_H
 
-#include "MinHook.h"
+#include <windows.h>
 
-void hello();
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD_PTR ul_reason_for_call, LPVOID lpReserved);
+DWORD WINAPI onLibraryLoaded(HMODULE module);
 
 #endif

@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(lib/minhook)
 
-add_library(packet_interceptor MODULE src/library.cpp src/library.h src/Interceptor.cpp src/Interceptor.h src/Hook.h)
+add_library(packet_interceptor MODULE src/library.cpp src/library.h src/Interceptor.cpp src/Interceptor.h src/Hook.h src/ModuleHideHelpers.cpp src/ModuleHideHelpers.h)
 
 if ("${CMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE}" STREQUAL "x86")
     message("packet-interceptor will be compiled for 32bits processes")

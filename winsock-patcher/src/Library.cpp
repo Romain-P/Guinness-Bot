@@ -1,5 +1,4 @@
-#include "library.h"
-#include "Interceptor.h"
+#include "Library.h"
 #include "Hook.h"
 #include "ModuleHideHelpers.h"
 
@@ -8,6 +7,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD_PTR ul_reason_for_call, LPVOID lpRe
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
+            ctx.config(hModule);
             DisableThreadLibraryCalls(hModule);
             CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE) onLibraryLoaded, hModule, 0, nullptr);
 
@@ -28,9 +28,5 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD_PTR ul_reason_for_call, LPVOID lpRe
 
 DWORD WINAPI onLibraryLoaded(HMODULE module) {
     ctx.init();
-    while (true)
-    {
-        Sleep(10);
-    }
     return 0;
 }

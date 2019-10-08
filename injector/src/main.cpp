@@ -1,9 +1,16 @@
 #include <iostream>
-#include "Injector.h"
 
-int main() {
-    Injector injector;
-    std::cout << injector.find_target_process("Dofus") << std::endl;
-    std::cout << injector.inject("winsock-patcher.dll") << std::endl;
+#include <HadesMemory/Injector.hpp>
+#include <HadesMemory/MemoryMgr.hpp>
+#include <AsmJit/Assembler.h>
+
+using HadesMem::MemoryMgr;
+using HadesMem::Injector;
+
+int main(int ac, char **args) {
+    MemoryMgr const memory(9812);
+    Injector const injector(memory);
+
+    injector.InjectDll(L"winsock-patcher.dll", HadesMem::Injector::InjectFlag_PathResolution);
     return 0;
 }

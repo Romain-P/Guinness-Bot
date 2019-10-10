@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(injector)
+project(guiness-native-api)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 99)
@@ -58,6 +58,24 @@ file(GLOB HADES_SRC
 
 include_directories(src/HadesMemory/include)
 
-add_executable(injector src/main.cpp ${HADES_SRC} ${BEA_SOURCES} ${ASMJIT_SOURCES})
+if(NOT DEFINED ENV{JAVA_HOME})
+    message("java home not found, please edit manually cmake line 63 for specify your java home directory")
+    set(JAVA_HOME "C:/Program Files/Java/jdk1.8.0_181")
+endif()
 
-target_link_libraries(injector CONAN_PKG::boost user32 advapi32 dbghelp shell32 psapi imagehlp ole32)
+find_package(JNI REQUIRED)
+include_directories(${JNI_INCLUDE_DIRS})
+include_directories(include)
+
+add_library(guinness-native-api MODULE src/library.cpp ${HADES_SRC} ${BEA_SOURCES} ${ASMJIT_SOURCES})
+
+target_link_libraries(guinness-native-api CONAN_PKG::boost user32 advapi32 dbghelp shell32 psapi imagehlp ole32 ${JNI_LIBRARIES})
+
+
+if ("${CMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE}" STREQUAL "x86")
+    message("guinness-native-api will be compiled for 32bits processes")
+    set_target_properties(guinness-native-api PROPERTIES SUFFIX "-x32.dll")
+else()
+    message("guinness-native-api will be compiled for 64bits processes")
+    set_target_properties(guinness-native-api PROPERTIES SUFFIX "-x64.dll")
+endif()

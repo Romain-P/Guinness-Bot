@@ -6,6 +6,6 @@ conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-co
 echo "added source: bincrafters"
 :found
 
-mkdir ..\build && cd ..\build && conan install --build=missing -s compiler="Visual Studio" -s compiler.version=15 -s "arch=x86_64" -s "arch_build=x86_64" .. && cmake .. -G "Visual Studio 16 2019" -A x64 -Thost=x64 -DCMAKE_BUILD_TYPE=Release
+mkdir ..\build64 && cd ..\build64 && conan install --build=missing -s compiler="Visual Studio" -s compiler.version=15 -s "arch=x86_64" -s "arch_build=x86_64" .. && cmake .. -G "Visual Studio 16 2019" -A x64 -Thost=x64 -DCMAKE_BUILD_TYPE=Release
 echo "Visual Studio Solution File created unto \build"
 pause

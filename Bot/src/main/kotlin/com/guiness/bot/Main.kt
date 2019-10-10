@@ -1,8 +1,10 @@
+package com.guiness.bot
+
+import com.guiness.bot.external.NativeAPI
 import io.ktor.http.toHttpDateString
 import io.ktor.network.selector.ActorSelectorManager
 import io.ktor.network.sockets.*
 import io.ktor.util.KtorExperimentalAPI
-import io.netty.buffer.ByteBuf
 import kotlinx.coroutines.*
 import kotlinx.coroutines.io.ByteWriteChannel
 import kotlinx.coroutines.io.close
@@ -45,7 +47,7 @@ class LoggerWriter(val log: Logger, val level: LoggingLevel) : Writer() {
 
     override fun write(cbuf: CharArray, off: Int, len: Int) {
         if (!closed)
-            log.log(level, cbuf.slice(IntRange(off, off+len)).toString())
+            log.log(level, cbuf.slice(IntRange(off, off + len)).toString())
     }
 
     override fun flush() {
@@ -74,6 +76,7 @@ interface Logger {
         log(LoggingLevel.ERROR, msg, *args)
         throw exc(format(msg, *args))
     }
+
     fun todo(msg: String, vararg args: Any) {
         log(LoggingLevel.TODO, msg, *args)
         throw NotImplementedError(format(msg, *args))
@@ -91,9 +94,14 @@ interface Logger {
 
 val WS_re = Regex.fromLiteral("(s+)")
 
-class StdLogger(val out: PrintStream, override val name: String, override val context: Map<String, Any>, val clock: Clock = Clock.systemUTC()) : Logger {
+class StdLogger(
+    val out: PrintStream,
+    override val name: String,
+    override val context: Map<String, Any>,
+    val clock: Clock = Clock.systemUTC()
+) : Logger {
     companion object {
-        fun formatLevel(l: LoggingLevel) = when(l) {
+        fun formatLevel(l: LoggingLevel) = when (l) {
             LoggingLevel.DEBUG -> "[*]"
             LoggingLevel.INFO -> "[.]"
             LoggingLevel.GOOD -> "[+]"
@@ -109,11 +117,13 @@ class StdLogger(val out: PrintStream, override val name: String, override val co
     override fun log(level: LoggingLevel, msg: String, vararg args: Any) {
         val time = clock.instant().toHttpDateString()
 
-        val text = format("%s -- %s %s $contextDisplay ${escapeControlSequences(msg)}",
-                            time,
-                            name,
-                            formatLevel(level),
-                            *args)
+        val text = format(
+            "%s -- %s %s $contextDisplay ${escapeControlSequences(msg)}",
+            time,
+            name,
+            formatLevel(level),
+            *args
+        )
         out.println(text)
     }
 
@@ -142,34 +152,39 @@ class StdLogger(val out: PrintStream, override val name: String, override val co
 
 enum class StdLoggerType { Stdout, Stderr, Syslog }
 
-class StdLoggerFactory(val loggerType: StdLoggerType = StdLoggerType.Stdout) : LoggerFactory {
+class StdLoggerFactory(val loggerType: StdLoggerType = StdLoggerType.Stdout) :
+    LoggerFactory {
     val printStream: PrintStream = run {
-        when(loggerType) {
+        when (loggerType) {
             StdLoggerType.Stdout -> System.out
             StdLoggerType.Stderr -> System.err
             StdLoggerType.Syslog -> throw NotImplementedError("syslog not supported yet")
         }
     }
 
-    override fun create(name: String, context: Map<String, Any>)
-        = StdLogger(printStream, name, context)
+    override fun create(name: String, context: Map<String, Any>) = StdLogger(printStream, name, context)
 }
 
 interface LoggerFactory {
     fun create(name: String, context: Map<String, Any>): Logger
 }
 
-inline fun <reified T> T.logger(factory: LoggerFactory = StdLoggerFactory(), vararg context: Pair<String, Any> = emptyArray()) = lazy {
+inline fun <reified T> T.logger(
+    factory: LoggerFactory = StdLoggerFactory(),
+    vararg context: Pair<String, Any> = emptyArray()
+) = lazy {
     factory.create(T::class.simpleName ?: "", mapOf(*context))
 }
 
 val exec: ExecutorService = Executors.newCachedThreadPool()
 @KtorExperimentalAPI
 val selector = ActorSelectorManager(exec.asCoroutineDispatcher())
+
 @KtorExperimentalAPI
 fun aSocket(): SocketBuilder {
     return aSocket(selector)
 }
+
 suspend inline fun <T> repeat(crossinline fn: suspend () -> T?): T {
     while (true) {
         return fn() ?: continue
@@ -180,10 +195,12 @@ val NL: ByteBuffer = ByteBuffer.wrap(byteArrayOf(0))
 val LF: ByteBuffer = ByteBuffer.wrap(byteArrayOf(0xa))
 val CRLF: ByteBuffer = ByteBuffer.wrap(byteArrayOf(0xd, 0xa))
 
-suspend fun copy(from: Socket, to: Socket, delim: ByteBuffer,
-                 allocator: ByteBufferAllocator = HeapByteBufferAllocator,
-                 bufsize: Int = 256,
-                 onreceive: suspend ByteWriteChannel.(buf: ByteBuffer) -> Unit) {
+suspend fun copy(
+    from: Socket, to: Socket, delim: ByteBuffer,
+    allocator: ByteBufferAllocator = HeapByteBufferAllocator,
+    bufsize: Int = 256,
+    onreceive: suspend ByteWriteChannel.(buf: ByteBuffer) -> Unit
+) {
     val input = from.openReadChannel()
     val output = to.openWriteChannel()
     var cursize = bufsize
@@ -220,7 +237,9 @@ fun onShutdown(fn: () -> Unit) {
 }
 
 @KtorExperimentalAPI
-fun main() = runBlocking {
+fun main(args: Array<String>) = runBlocking {
+    val native = NativeAPI()
+    native.init()
     val log by logger()
     val upaddr = InetSocketAddress("127.0.0.1", 5556)
     val bindAddr = InetSocketAddress("127.0.0.1", 5555)
@@ -229,7 +248,7 @@ fun main() = runBlocking {
     log.good("Hello, World!")
 
     val sock = aSocket().tcp().bind(bindAddr) {
-//        reuseAddress = true
+        //        reuseAddress = true
 //        reusePort = true
         typeOfService = TypeOfService.IPTOS_RELIABILITY
     }

@@ -9,19 +9,35 @@ extern "C" {
 #endif
 /*
  * Class:     com_guiness_bot_external_NativeAPI
+ * Method:    availableProcesses
+ * Signature: (Ljava/lang/String;)[Ljava/lang/Integer;
+ */
+JNIEXPORT jintArray JNICALL Java_com_guiness_bot_external_NativeAPI_availableProcesses
+        (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     com_guiness_bot_external_NativeAPI
  * Method:    inject
  * Signature: (ILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_com_guiness_bot_external_NativeAPI_inject
-  (JNIEnv *, jobject, jint, jstring);
+        (JNIEnv *, jobject, jint, jstring);
 
 /*
  * Class:     com_guiness_bot_external_NativeAPI
- * Method:    injectDofus
- * Signature: (Ljava/lang/String;)V
+ * Method:    login
+ * Signature: (ILjava/lang/String;Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_guiness_bot_external_NativeAPI_injectDofus
-  (JNIEnv *, jobject, jstring);
+JNIEXPORT void JNICALL Java_com_guiness_bot_external_NativeAPI_login
+        (JNIEnv *, jobject, jint, jstring, jstring);
+
+/*
+ * Class:     com_guiness_bot_external_NativeAPI
+ * Method:    reLogin
+ * Signature: (ILjava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_guiness_bot_external_NativeAPI_reLogin
+        (JNIEnv *, jobject, jint, jstring, jstring);
 
 #ifdef __cplusplus
 }

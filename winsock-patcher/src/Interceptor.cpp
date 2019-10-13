@@ -25,8 +25,6 @@ void Interceptor::init() {
     MH_Initialize();
     MH_CreateHookApi(L"Ws2_32", "connect", (LPVOID) onConnect, (LPVOID *) &winsockConnect);
     MH_EnableHook(MH_ALL_HOOKS);
-
-    std::cout << _dllPath.c_str() << std::endl;
 }
 
 int WINAPI onConnect(SOCKET socket, const sockaddr *addr, int length) {
@@ -34,6 +32,7 @@ int WINAPI onConnect(SOCKET socket, const sockaddr *addr, int length) {
     auto targetPort = ntohs(sock->sin_port);
 
     if (targetPort == Interceptor::ankama_auth_port) {
+        ctx.saveAnkamaHost(&sock->sin_addr);
         InetPton(AF_INET, Interceptor::localhost, &(sock->sin_addr));
         sock->sin_port = htons(ctx.proxyPort());
     }
@@ -74,4 +73,12 @@ void Interceptor::config(HMODULE module) {
 
 std::string Interceptor::filePath(std::string const &filename) {
     return _dllPath + "\\" + filename;
+}
+
+void Interceptor::saveAnkamaHost(struct in_addr *ptr) {
+    char ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, ptr, ip, INET_ADDRSTRLEN);
+
+    std::ofstream outfile(".ankama-host");
+    outfile << ip;
 }

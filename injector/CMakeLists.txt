@@ -60,14 +60,15 @@ include_directories(src/HadesMemory/include)
 
 if(NOT DEFINED ENV{JAVA_HOME})
     message("java home not found, please edit manually cmake line 63 for specify your java home directory")
-    set(JAVA_HOME "C:/Program Files/Java/jdk1.8.0_181")
+    set(JAVA_HOME "C:/Program Files (x86)/Java/jdk1.8.0_221")
 endif()
 
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS})
 include_directories(include)
 
-add_library(guinness-native-api MODULE src/library.cpp ${HADES_SRC} ${BEA_SOURCES} ${ASMJIT_SOURCES})
+add_library(guinness-native-api MODULE src/library.cpp ${HADES_SRC} ${BEA_SOURCES} ${ASMJIT_SOURCES} src/keysend.cpp)
+#add_executable(guinness-native-api src/library.cpp ${HADES_SRC} ${BEA_SOURCES} ${ASMJIT_SOURCES} src/keysend.cpp)
 
 target_link_libraries(guinness-native-api CONAN_PKG::boost user32 advapi32 dbghelp shell32 psapi imagehlp ole32 ${JNI_LIBRARIES})
 

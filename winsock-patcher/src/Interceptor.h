@@ -22,6 +22,8 @@ public:
     std::string filePath(std::string const &filename);
 
     UINT16 proxyPort() { return _proxyPort; }
+    void saveAnkamaHost(struct in_addr *ptr);
+
 private:
     UINT16 _proxyPort;
     std::string _dllPath;

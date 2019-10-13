@@ -1,32 +1,44 @@
 package com.guiness.bot.external
 
+import com.guiness.bot.core.ProcessID
 import java.io.File
 
 class NativeAPI {
+
+    /**
+     * Returns a list of processes named by the given argument
+     */
+    private external fun availableProcesses(processName: String): IntArray
+
     /**
      * Injects a given process id with a given dll
      */
-    external fun inject(processId: Int, dllPath: String)
+    private external fun inject(id: ProcessID, dllPath: String)
 
     /**
-     * Injects the first dofus process found
+     * Auto login on an available process already injected
      */
-    external fun injectDofus(dllPath: String)
+    external fun login(id: ProcessID, username: String, password: String)
 
-    fun init() {
-        injectDofus(patcherLibraryName)
-    }
+    /**
+     * Auto relogin if the player is disconnected
+     */
+    external fun reLogin(id: ProcessID, username: String, password: String)
+
+    fun injectDofus(id: ProcessID) = inject(id, patcherLibraryName)
+    fun allDofusProccesses() = availableProcesses(dofusExecutableName)
 
     companion object {
+        const val dofusExecutableName = "Dofus.exe"
         const val nativeDirectory = "native"
-        val apiLibraryName = "guinness-native-api".toAbsolutePath()
-        val patcherLibraryName = "guinness-native-patcher".toAbsolutePath()
+        val apiLibraryName = nativeLibraryPath("guinness-native-api")
+        val patcherLibraryName = nativeLibraryPath("guinness-native-patcher")
 
         init {
             System.load(apiLibraryName)
         }
+
+        fun nativeLibraryPath(dllName: String) = System.getProperty("user.dir") + File.separator +
+                nativeDirectory + File.separator + dllName + "-x" + System.getProperty("sun.arch.data.model") + ".dll"
     }
 }
-
-fun String.toAbsolutePath() = System.getProperty("user.dir") + File.separator + NativeAPI.nativeDirectory +
-        File.separator + this + "-x" + System.getProperty("sun.arch.data.model") + ".dll"

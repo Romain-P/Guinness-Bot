@@ -1,4 +1,4 @@
-package com.guiness.bot
+package com.guiness.bot.core
 
 import com.guiness.bot.external.NativeAPI
 import io.ktor.http.toHttpDateString
@@ -162,7 +162,8 @@ class StdLoggerFactory(val loggerType: StdLoggerType = StdLoggerType.Stdout) :
         }
     }
 
-    override fun create(name: String, context: Map<String, Any>) = StdLogger(printStream, name, context)
+    override fun create(name: String, context: Map<String, Any>) =
+        StdLogger(printStream, name, context)
 }
 
 interface LoggerFactory {
@@ -236,10 +237,16 @@ fun onShutdown(fn: () -> Unit) {
     Runtime.getRuntime().addShutdownHook(Thread(Runnable(fn)))
 }
 
+fun injectTest() {
+    val profiles = ProfileManager()
+    val bots = BotManager()
+
+    bots.connect(profiles.getDefaultProfile().accounts.values.toList())
+}
+
 @KtorExperimentalAPI
 fun main(args: Array<String>) = runBlocking {
-    val native = NativeAPI()
-    native.init()
+    injectTest()
     val log by logger()
     val upaddr = InetSocketAddress("127.0.0.1", 5556)
     val bindAddr = InetSocketAddress("127.0.0.1", 5555)

@@ -3,7 +3,15 @@ package com.guiness.bot.external
 import com.guiness.bot.core.ProcessID
 import java.io.File
 
-class NativeAPI {
+object NativeAPI {
+    const val dofusExecutableName = "Dofus.exe"
+    const val nativeDirectory = "native"
+    val apiLibraryName = nativeLibraryPath("guinness-native-api")
+    val patcherLibraryName = nativeLibraryPath("guinness-native-patcher")
+
+    init {
+        System.load(apiLibraryName)
+    }
 
     /**
      * Returns a list of processes named by the given argument
@@ -25,20 +33,17 @@ class NativeAPI {
      */
     external fun reLogin(id: ProcessID, username: String, password: String)
 
+    /**
+     * Sets the proxy port used for hook connect()
+     */
+    private external fun patchProxyPort(port: Int, patcherLibraryPath: String)
+
     fun injectDofus(id: ProcessID) = inject(id, patcherLibraryName)
+
     fun allDofusProccesses() = availableProcesses(dofusExecutableName)
 
-    companion object {
-        const val dofusExecutableName = "Dofus.exe"
-        const val nativeDirectory = "native"
-        val apiLibraryName = nativeLibraryPath("guinness-native-api")
-        val patcherLibraryName = nativeLibraryPath("guinness-native-patcher")
+    fun patchProxyPort(port: Int) = patchProxyPort(port, patcherLibraryName)
 
-        init {
-            System.load(apiLibraryName)
-        }
-
-        fun nativeLibraryPath(dllName: String) = System.getProperty("user.dir") + File.separator +
-                nativeDirectory + File.separator + dllName + "-x" + System.getProperty("sun.arch.data.model") + ".dll"
-    }
+    fun nativeLibraryPath(dllName: String) = System.getProperty("user.dir") + File.separator +
+            nativeDirectory + File.separator + dllName + "-x" + System.getProperty("sun.arch.data.model") + ".dll"
 }

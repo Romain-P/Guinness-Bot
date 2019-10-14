@@ -10,37 +10,14 @@
 #include <string>
 #include <thread>
 #include <list>
+#include <HadesMemory/FindPattern.hpp>
+#include <fstream>
 #include "keysend.h"
+#include <regex>
 
 using HadesMem::MemoryMgr;
 using HadesMem::Injector;
-
-int main(int ac, char **args) {
-    auto current = findWindowHandle(GetCurrentProcessId());
-    auto win = findWindowHandle(L"Dofus.exe");
-    DWORD myThread  = GetCurrentThreadId();
-
-    DWORD curThread = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
-    AttachThreadInput(myThread, curThread, TRUE);
-
-    DWORD newThread = GetWindowThreadProcessId(win, NULL);
-    AttachThreadInput(curThread, newThread, TRUE);
-    AttachThreadInput(myThread, newThread, TRUE);
-    //SetWindowTextA(window, "Guinness");
-    PostMessage(win, WM_SYSCOMMAND, SC_RESTORE, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    SetFocus(current);
-    SetFocus(win);
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    sendKeyStroke(win,0x09);
-    PostMessage(win, WM_CHAR, 'R', 0);
-    PostMessage(win, WM_CHAR, 'o', 0);
-    PostMessage(win, WM_CHAR, 'm', 0);
-    PostMessage(win, WM_CHAR, 'a', 0);
-    PostMessage(win, WM_CHAR, 'i', 0);
-    PostMessage(win, WM_CHAR, 'N', 0);
-    PostMessage(win, WM_CHAR, 200, 0);
-}
+using HadesMem::FindPattern;
 
 std::wstring toWstring(JNIEnv *env, jstring str) {
     unsigned char isCopy = 1;
@@ -123,4 +100,31 @@ Java_com_guiness_bot_external_NativeAPI_reLogin
 (JNIEnv *, jobject, jint, jstring username, jstring password)
 {
 
+}
+
+JNIEXPORT void JNICALL
+Java_com_guiness_bot_external_NativeAPI_patchProxyPort
+(JNIEnv *env, jobject, jint jPort, jstring patcherPath)
+{
+    jboolean isCopy = 1;
+    std::string patcherPathStr((*env).GetStringUTFChars(patcherPath, &isCopy));
+    auto port = (UINT32) jPort;
+
+    /** load magic bytes **/
+    UINT32 magic = 0xcafebabe;
+    char payload[sizeof(magic) + 1];
+    payload[sizeof(magic)] = 0;
+    memcpy(payload, &magic, sizeof(magic));
+
+    /** load library binary data **/
+    std::ifstream ifs(patcherPathStr, std::ios::binary);
+    std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+
+    /** find offset of magic **/
+    size_t offset = content.find(payload);
+
+    /** patch port number (offset + sizeof(uint32)) **/
+    std::fstream fout(patcherPathStr, std::fstream::in | std::fstream::out | std::fstream::binary );
+    fout.seekp(offset + sizeof(magic));
+    fout.write((char *)&port, sizeof(port));
 }

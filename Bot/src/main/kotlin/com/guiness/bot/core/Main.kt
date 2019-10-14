@@ -237,16 +237,11 @@ fun onShutdown(fn: () -> Unit) {
     Runtime.getRuntime().addShutdownHook(Thread(Runnable(fn)))
 }
 
-fun injectTest() {
-    val profiles = ProfileManager()
-    val bots = BotManager()
-
-    bots.connect(profiles.getDefaultProfile().accounts.values.toList())
-}
-
 @KtorExperimentalAPI
 fun main(args: Array<String>) = runBlocking {
-    injectTest()
+    NativeAPI.patchProxyPort(5555)
+    BotManager.connect(ProfileManager.getDefaultProfile().accounts.values.toList())
+
     val log by logger()
     val upaddr = InetSocketAddress("127.0.0.1", 5556)
     val bindAddr = InetSocketAddress("127.0.0.1", 5555)

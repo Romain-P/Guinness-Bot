@@ -4,10 +4,9 @@ import com.guiness.bot.entities.Account
 import com.guiness.bot.entities.Bot
 import com.guiness.bot.external.NativeAPI
 
-class BotManager(
-    val nativeAPI: NativeAPI = NativeAPI(),
+object BotManager {
     val instances: MutableMap<ProcessID, Bot> = HashMap()
-) {
+
     /**
      * Finds a dofus instance and auto-logs for each account given in the list
      * If there is no enough dofus instances opened, a list of accounts that did not
@@ -19,7 +18,7 @@ class BotManager(
      */
     fun connect(accounts: List<Account>): List<Account> {
         val remainingAccounts = ArrayList(accounts)
-        val processes = nativeAPI.allDofusProccesses().filter { instances[it] == null }
+        val processes = NativeAPI.allDofusProccesses().filter { instances[it] == null }
 
         if (processes.isEmpty()) return accounts
 
@@ -29,8 +28,8 @@ class BotManager(
             val account = accounts[index]
 
             instances[pid] = Bot(pid, account, "", "")
-            nativeAPI.injectDofus(pid)
-            nativeAPI.login(pid, account.username, account.password)
+            NativeAPI.injectDofus(pid)
+            NativeAPI.login(pid, account.username, account.password)
             remainingAccounts.remove(account)
         }
 

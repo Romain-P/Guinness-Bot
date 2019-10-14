@@ -8,6 +8,7 @@
 #include "Interceptor.h"
 
 extern connect_t winsockConnect;
+extern recv_t winsockRecv;
 extern Interceptor ctx;
 
 #endif //PACKET_INTERCEPTOR_HOOK_H

@@ -68,10 +68,8 @@ include_directories(${JNI_INCLUDE_DIRS})
 include_directories(include)
 
 add_library(guinness-native-api MODULE src/library.cpp ${HADES_SRC} ${BEA_SOURCES} ${ASMJIT_SOURCES} src/keysend.cpp)
-#add_executable(guinness-native-api src/library.cpp ${HADES_SRC} ${BEA_SOURCES} ${ASMJIT_SOURCES} src/keysend.cpp)
 
 target_link_libraries(guinness-native-api CONAN_PKG::boost user32 advapi32 dbghelp shell32 psapi imagehlp ole32 ${JNI_LIBRARIES})
-
 
 if ("${CMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE}" STREQUAL "x86")
     message("guinness-native-api will be compiled for 32bits processes")

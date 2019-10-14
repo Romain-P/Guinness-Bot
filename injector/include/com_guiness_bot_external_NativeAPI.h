@@ -10,7 +10,7 @@ extern "C" {
 /*
  * Class:     com_guiness_bot_external_NativeAPI
  * Method:    availableProcesses
- * Signature: (Ljava/lang/String;)[Ljava/lang/Integer;
+ * Signature: (Ljava/lang/String;)[I
  */
 JNIEXPORT jintArray JNICALL Java_com_guiness_bot_external_NativeAPI_availableProcesses
         (JNIEnv *, jobject, jstring);
@@ -38,6 +38,14 @@ JNIEXPORT void JNICALL Java_com_guiness_bot_external_NativeAPI_login
  */
 JNIEXPORT void JNICALL Java_com_guiness_bot_external_NativeAPI_reLogin
         (JNIEnv *, jobject, jint, jstring, jstring);
+
+/*
+ * Class:     com_guiness_bot_external_NativeAPI
+ * Method:    patchProxyPort
+ * Signature: (ILjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_guiness_bot_external_NativeAPI_patchProxyPort
+        (JNIEnv *, jobject, jint, jstring);
 
 #ifdef __cplusplus
 }

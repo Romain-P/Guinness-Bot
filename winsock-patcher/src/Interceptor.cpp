@@ -127,10 +127,6 @@ std::string const &Interceptor::gameIp() const {
     return _gameIp;
 }
 
-std::string &Interceptor::authIp() {
-    return _authIp;
-}
-
 void Interceptor::uncompressGameIP(char const *data, SIZE_T len) {
     static std::string BASE = {
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',

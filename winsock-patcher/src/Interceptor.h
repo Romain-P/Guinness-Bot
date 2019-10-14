@@ -28,10 +28,8 @@ public:
 
     UINT16 const &gamePort() const;
     std::string const &gameIp() const;
-    std::string &authIp();
     std::string &globalBuffer();
 private:
-    std::string _authIp;
     std::string _gameIp;
     UINT16 _gamePort;
     std::string _dllPath;

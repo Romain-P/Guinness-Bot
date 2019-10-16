@@ -1,21 +1,80 @@
 package com.guiness.bot.core
 
 import com.guiness.bot.external.NativeAPI
+import io.netty.buffer.ByteBuf
+import io.netty.buffer.Unpooled
+import io.netty.channel.ChannelHandlerAdapter
+import io.netty.channel.ChannelOption
+import io.netty.handler.codec.DelimiterBasedFrameDecoder
+import io.netty.handler.codec.Delimiters
+import io.netty.handler.codec.string.LineEncoder
+import io.netty.handler.codec.string.LineSeparator
+import io.netty.handler.codec.string.StringDecoder
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+import reactor.netty.tcp.TcpServer
+import reactor.netty.resources.LoopResources
+
+
+
+class Main
+
+val NL: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0x0))
+val LFNL: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0xa, 0x0))
+
+fun main(args: Array<String>) {
+    //NativeAPI.patchProxyPort(5555)
+
+    val loop = LoopResources.create("event-loop", 1, 4, true)
+    val server = TcpServer.create()
+        .runOn(loop)
+        .host("127.0.0.1")
+        .port(5555)
+        .option(ChannelOption.SO_REUSEADDR, true)
+        .doOnBind {
+            //BotManager.connect(ProfileManager.getDefaultProfile().accounts.values.toList())
+        }
+        .doOnConnection {
+            it.addHandlerFirst("frame-decoder", DelimiterBasedFrameDecoder(Integer.MAX_VALUE, Unpooled.wrappedBuffer(byteArrayOf('A'.toByte()))))
+            it.addHandlerLast("decoder", StringDecoder(Charsets.UTF_8))
+            it.addHandlerLast("frame-encoder", LineEncoder(LineSeparator(".PUTE")))
+        }
+        .handle { inbound, outbound ->
+            inbound.receiveObject().flatMap {
+                println("Received $it")
+                outbound.sendString(Mono.just("test"))
+            }.subscribe()
+            Flux.never()
+        }
+        .bindNow()
+        .onDispose()
+        .block()
+}
+
+/**
+import com.guiness.bot.external.NativeAPI
 import io.ktor.http.toHttpDateString
 import io.ktor.network.selector.ActorSelectorManager
 import io.ktor.network.sockets.*
+import io.ktor.util.InternalAPI
 import io.ktor.util.KtorExperimentalAPI
+import io.ktor.util.moveTo
+import io.ktor.util.moveToByteArray
+import io.netty.handler.codec.DelimiterBasedFrameDecoder
 import kotlinx.coroutines.*
 import kotlinx.coroutines.io.ByteWriteChannel
 import kotlinx.coroutines.io.close
 import kotlinx.coroutines.io.readUntilDelimiter
+import kotlinx.coroutines.io.writeStringUtf8
 import kotlinx.coroutines.time.delay
+import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.io.PrintWriter
 import java.io.Writer
 import java.lang.Exception
 import java.lang.Runnable
 import java.net.InetSocketAddress
+import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.time.Duration
@@ -192,12 +251,45 @@ suspend inline fun <T> repeat(crossinline fn: suspend () -> T?): T {
     }
 }
 
-val NL: ByteBuffer = ByteBuffer.wrap(byteArrayOf(0))
-val LF: ByteBuffer = ByteBuffer.wrap(byteArrayOf(0xa))
-val CRLF: ByteBuffer = ByteBuffer.wrap(byteArrayOf(0xd, 0xa))
+val NL: ByteBuffer = ByteBuffer.wrap(byteArrayOf(0x0))
+val LFNL: ByteBuffer =  ByteBuffer.wrap(byteArrayOf(0xa, 0))
+val LF: ByteBuffer =  ByteBuffer.wrap(byteArrayOf(0xa))
+val CRLF: ByteBuffer =  ByteBuffer.wrap(byteArrayOf(0xd, 0xa))
+
+@UseExperimental(InternalAPI::class)
+suspend fun readPacket(buffer: ByteBuffer, packetBuffer: ByteBuffer, delim: ByteBuffer, readPosition: Int): Int {
+    val len = buffer.position() + 1
+
+    var nextReadPosition = readPosition
+    var delimIndex = 0
+    val toReach = delim.limit() - 1
+    var endIndex: Int = -1
+
+    for (i in readPosition .. len) {
+        val byte = buffer[i]
+
+        if (delimIndex == toReach) {
+            endIndex = i
+            break
+        }
+        else if (byte == delim[delimIndex])
+            delimIndex++
+        else
+            delimIndex = 0
+        ++nextReadPosition
+    }
+
+    if (endIndex == -1) return nextReadPosition
+
+    val flipped = buffer.slice()
+    flipped.moveTo(packetBuffer, endIndex - delim.limit())
+    buffer.position(endIndex + 1)
+
+    return 0
+}
 
 suspend fun copy(
-    from: Socket, to: Socket, delim: ByteBuffer,
+    from: Socket, to: Socket, delim: ByteArray,
     allocator: ByteBufferAllocator = HeapByteBufferAllocator,
     bufsize: Int = 256,
     onreceive: suspend ByteWriteChannel.(buf: ByteBuffer) -> Unit
@@ -206,27 +298,30 @@ suspend fun copy(
     val output = to.openWriteChannel()
     var cursize = bufsize
     var buf = allocator.malloc(bufsize)
-    var len = 0
+    var packet = StringBuilder
+    var readPosition = 0
+
     try {
         reading@ while (!from.isClosed) {
             if (!buf.hasRemaining()) {
                 cursize *= 2
-                buf = allocator.malloc(cursize)
             }
-            when (val recv = input.readUntilDelimiter(delim, buf)) {
-                0 -> break@reading // close connection
+            when (input.readFully(buf)) {
+                0 -> continue@reading
                 bufsize -> continue@reading // only received part of packet
-                else -> len += recv
             }
 
-            buf.position(0)
-            output.onreceive(buf)
+            readPosition = readPacket(buf, packet, delim, readPosition)
+
+            if (packet.position() == 0) continue
+
+            output.onreceive(packet)
             output.flush()
-            buf.limit(bufsize)
-            buf.clear()
-            len = 0
+            buf = buf.slice()
         }
-    } finally {
+    }
+    catch(e: Exception) {}
+    finally {
         allocator.free(buf)
         from.awaitClosed()
         output.close()
@@ -238,12 +333,12 @@ fun onShutdown(fn: () -> Unit) {
 }
 
 @KtorExperimentalAPI
-fun main(args: Array<String>) = runBlocking {
+fun main(args: Array<String>) = runBlocking(Dispatchers.Default) {
     NativeAPI.patchProxyPort(5555)
     BotManager.connect(ProfileManager.getDefaultProfile().accounts.values.toList())
 
     val log by logger()
-    val upaddr = InetSocketAddress("127.0.0.1", 5556)
+    val upaddr = InetSocketAddress("34.251.172.139", 443)
     val bindAddr = InetSocketAddress("127.0.0.1", 5555)
     val msgcharset = Charsets.UTF_8
 
@@ -280,28 +375,36 @@ fun main(args: Array<String>) = runBlocking {
                 }
             }
 
+            val upAddr = upstream.remoteAddress as InetSocketAddress
+            val uplog = log.moreContext("ip" to upAddr.address.toString())
+
             log.good(
                 "connected to upstream %s:%s",
-                downaddr.hostName, downaddr.port,
                 upaddr.hostName, upaddr.port
             )
 
-            val upjob = async {
-                log.debug("start copying upstream to downstream")
-                copy(upstream, downstream, LF) {
-                    log.debug("SENT[%04d] %s", it.limit(), msgcharset.decode(it).toString())
-                    writeFully(it)
-                }
-                log.info("upstream closed")
-            }
-
             val downjob = async {
                 log.debug("start copying downstrean to upstream")
-                copy(downstream, upstream, LF) {
-                    log.debug("RECV[%04d] %s", it.limit(), msgcharset.decode(it).toString())
-                    writeFully(it)
+                copy(downstream, upstream, LFNL) {
+                    val packet = msgcharset.decode(it).toString()
+                    uplog.debug("RECV[%04d] %s %s", it.limit(), packet, Thread.currentThread().name)
+                    if (!packet.startsWith(".{")) {
+                        writeStringUtf8(packet) // it could be writeFully() but we need to it.flip() before because .decode consumes the buffer
+                        writeFully(ByteBuffer.wrap(LFNL))
+                    }
                 }
                 log.info("downstream closed")
+            }
+
+            val upjob = async {
+                log.debug("start copying upstream to downstream")
+                copy(upstream, downstream, NL) {
+                    val packet = msgcharset.decode(it).toString()
+                    uplog.debug("SENT[%04d] %s %s", it.limit(), packet, Thread.currentThread().name)
+                    writeStringUtf8(packet) // it could be writeFully() but we need to it.flip() before because .decode consumes the buffer
+                    writeFully((ByteBuffer.wrap(NL)))
+                }
+                log.info("upstream closed")
             }
 
             try {
@@ -320,3 +423,4 @@ fun main(args: Array<String>) = runBlocking {
 
     log.good("See ya!")
 }
+        **/

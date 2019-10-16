@@ -9,6 +9,7 @@ group = "com.guinness.bot"
 version = "1.0-SNAPSHOT"
 
 repositories {
+    maven(url = "https://repo.spring.io/release")
     mavenCentral()
 }
 
@@ -22,8 +23,7 @@ application {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("io.ktor:ktor-server-core:${versions["ktor"]}")
-    implementation("io.ktor:ktor-server-netty:${versions["ktor"]}")
+    implementation("io.projectreactor.netty:reactor-netty:0.9.0.RELEASE")
 }
 
 tasks.withType<KotlinCompile> {

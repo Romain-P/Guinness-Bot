@@ -29,7 +29,7 @@ object BotManager {
 
             instances[pid] = Bot(pid, account, "", "")
             NativeAPI.injectDofus(pid)
-            NativeAPI.login(pid, account.username, account.password)
+            //NativeAPI.login(pid, account.username, account.password)
             remainingAccounts.remove(account)
         }
 

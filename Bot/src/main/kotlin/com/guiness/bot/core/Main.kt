@@ -1,26 +1,12 @@
 package com.guiness.bot.core
 
-import com.guiness.bot.external.NativeAPI
-import io.netty.buffer.ByteBuf
-import io.netty.buffer.Unpooled
-import io.netty.channel.ChannelHandlerAdapter
-import io.netty.channel.ChannelOption
-import io.netty.handler.codec.DelimiterBasedFrameDecoder
-import io.netty.handler.codec.Delimiters
-import io.netty.handler.codec.string.LineEncoder
-import io.netty.handler.codec.string.LineSeparator
-import io.netty.handler.codec.string.StringDecoder
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
-import reactor.netty.tcp.TcpServer
-import reactor.netty.resources.LoopResources
-
+import com.guiness.bot.netwotk.Proxy
 
 
 class Main
 
 fun main(args: Array<String>) {
-    NativeAPI.patchProxyPort(5555)
+    //NativeAPI.patchProxyPort(5555)
 
     Proxy.withHost("127.0.0.1", 5555)
         .withWorker(1, 4)

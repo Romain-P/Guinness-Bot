@@ -29,18 +29,3 @@ dependencies {
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
-
-val fatJar = task("fatJar", type = Jar::class) {
-    baseName = "guinness-bot"
-    manifest {
-        attributes["Main-Class"] = "com.guiness.bot.MainKt"
-    }
-    from(configurations.runtimeClasspath.get().map({ if (it.isDirectory) it else zipTree(it) }))
-    with(tasks.jar.get() as CopySpec)
-}
-
-tasks {
-    "build" {
-        dependsOn(fatJar)
-    }
-}

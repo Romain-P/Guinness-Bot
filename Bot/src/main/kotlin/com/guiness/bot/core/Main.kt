@@ -19,36 +19,12 @@ import reactor.netty.resources.LoopResources
 
 class Main
 
-val NL: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0x0))
-val LFNL: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0xa, 0x0))
-
 fun main(args: Array<String>) {
-    //NativeAPI.patchProxyPort(5555)
+    NativeAPI.patchProxyPort(5555)
 
-    val loop = LoopResources.create("event-loop", 1, 4, true)
-    val server = TcpServer.create()
-        .runOn(loop)
-        .host("127.0.0.1")
-        .port(5555)
-        .option(ChannelOption.SO_REUSEADDR, true)
-        .doOnBind {
-            //BotManager.connect(ProfileManager.getDefaultProfile().accounts.values.toList())
-        }
-        .doOnConnection {
-            it.addHandlerFirst("frame-decoder", DelimiterBasedFrameDecoder(Integer.MAX_VALUE, Unpooled.wrappedBuffer(byteArrayOf('A'.toByte()))))
-            it.addHandlerLast("decoder", StringDecoder(Charsets.UTF_8))
-            it.addHandlerLast("frame-encoder", LineEncoder(LineSeparator(".PUTE")))
-        }
-        .handle { inbound, outbound ->
-            inbound.receiveObject().flatMap {
-                println("Received $it")
-                outbound.sendString(Mono.just("test"))
-            }.subscribe()
-            Flux.never()
-        }
-        .bindNow()
-        .onDispose()
-        .block()
+    Proxy.withHost("127.0.0.1", 5555)
+        .withWorker(1, 4)
+        .start()
 }
 
 /**

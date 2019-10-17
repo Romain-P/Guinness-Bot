@@ -23,6 +23,7 @@ application {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("reflect"))
     implementation("io.projectreactor.netty:reactor-netty:0.9.0.RELEASE")
 }
 

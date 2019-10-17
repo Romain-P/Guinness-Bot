@@ -5,13 +5,19 @@ import io.netty.channel.ChannelFuture
 import reactor.netty.Connection
 
 class ProxyClientContext(
-    private val channel: Channel,
-    private val connection: Connection,
-    val uuid: String = channel.id().asLongText()
+    private val downstream: ProxyClientStream,
+    private var upstream: ProxyClientStream? = null
 ) {
-    fun send(packet: String): ChannelFuture = channel.writeAndFlush(packet)
+    fun uuid() = downstream.uuid
+
+    fun downstream() = downstream
+    fun upstream() : ProxyClientStream = upstream!!
+
+    fun attach(upstreamConnection: Connection) {
+        this.upstream = ProxyClientStream(upstreamConnection)
+    }
 
     companion object {
-        fun of(connection: Connection) = ProxyClientContext(connection.channel(), connection)
+        fun of(connection: Connection) = ProxyClientContext(ProxyClientStream(connection))
     }
 }

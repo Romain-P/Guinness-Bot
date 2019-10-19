@@ -58,11 +58,11 @@ object DofusProtocol {
 
             when (field.type) {
                 MetaMessageFieldType.STRING -> packet.append(value)
-                MetaMessageFieldType.INT -> packet.append(value as Int)
-                MetaMessageFieldType.FLOAT -> packet.append(value as Float)
-                MetaMessageFieldType.CHAR -> packet.append(value as Char)
+                MetaMessageFieldType.INT    -> packet.append(value as Int)
+                MetaMessageFieldType.FLOAT  -> packet.append(value as Float)
+                MetaMessageFieldType.CHAR   -> packet.append(value as Char)
                 MetaMessageFieldType.OBJECT -> serialize(packet, value, obj = field.metaObject)
-                MetaMessageFieldType.ARRAY -> serializeArray(packet, field, value)
+                MetaMessageFieldType.ARRAY  -> serializeArray(packet, field, value)
             }
         }
     }
@@ -78,9 +78,9 @@ object DofusProtocol {
 
             when(field.genericType) {
                 MetaMessageFieldType.STRING -> packet.append(elem)
-                MetaMessageFieldType.INT -> packet.append(elem as Int)
-                MetaMessageFieldType.FLOAT -> packet.append(elem as Float)
-                MetaMessageFieldType.CHAR -> packet.append(elem as Char)
+                MetaMessageFieldType.INT    -> packet.append(elem as Int)
+                MetaMessageFieldType.FLOAT  -> packet.append(elem as Float)
+                MetaMessageFieldType.CHAR   -> packet.append(elem as Char)
                 MetaMessageFieldType.OBJECT -> serialize(packet, elem, obj = field.metaObject)
                 MetaMessageFieldType.ARRAY  -> {/** should not happen, array of array not supported **/}
             }
@@ -248,6 +248,7 @@ object DofusProtocol {
             Char::class         -> MetaMessageFieldType.CHAR
             IntArray::class     -> MetaMessageFieldType.ARRAY
             CharArray::class    -> MetaMessageFieldType.ARRAY
+            FloatArray::class   -> MetaMessageFieldType.ARRAY
             else                -> {
                 if (klass.typeParameters.isEmpty())       /** if no generic type found **/
                     MetaMessageFieldType.OBJECT

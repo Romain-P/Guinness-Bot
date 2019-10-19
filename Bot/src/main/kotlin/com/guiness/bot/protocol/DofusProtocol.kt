@@ -27,11 +27,64 @@ object DofusProtocol {
         return deserialize(data, delim, msg = meta)
     }
 
+    fun serialize(message: Any): String? {
+        val annot: Message = message::class.findAnnotation() ?: return null
+        val header = annot.header
+        val meta = findMessage(header) ?: return null
+        val packet = StringBuilder(header)
+
+        serialize(packet, message, msg = meta)
+
+        return packet.toString()
+    }
+
+    fun serialize(packet: StringBuilder, instance: Any, msg: MetaMessage? = null, obj: MetaObject? = null) {
+        val fields = msg?.fields ?: obj?.fields ?: throw RuntimeException("so bad")
+        val delim = msg?.annot?.delimiter ?: obj?.delim ?: throw RuntimeException("so bad")
+
+        for (i in fields.indices) {
+            val field = fields[i]
+            val value = field.javaField.get(instance)
+
+            if (i > 0)
+                packet.append(delim)
+
+            when (field.type) {
+                MetaMessageFieldType.STRING -> packet.append(value)
+                MetaMessageFieldType.INT -> packet.append(value as Int)
+                MetaMessageFieldType.FLOAT -> packet.append(value as Float)
+                MetaMessageFieldType.CHAR -> packet.append(value as Char)
+                MetaMessageFieldType.OBJECT -> serialize(packet, value, obj = field.metaObject)
+                MetaMessageFieldType.ARRAY -> serializeArray(packet, field, value)
+            }
+        }
+    }
+
+    private fun serializeArray(packet: StringBuilder, field: MetaMessageField, value: Any) {
+        val array = value as Array<Any>
+
+        for (i in array.indices) {
+            val elem = array[i]
+
+            if (i > 0)
+                packet.append(field.delimiter)
+
+            when(field.genericType) {
+                MetaMessageFieldType.STRING -> packet.append(elem)
+                MetaMessageFieldType.INT -> packet.append(elem as Int)
+                MetaMessageFieldType.FLOAT -> packet.append(elem as Float)
+                MetaMessageFieldType.CHAR -> packet.append(elem as Char)
+                MetaMessageFieldType.OBJECT -> serialize(packet, elem, obj = field.metaObject)
+                MetaMessageFieldType.ARRAY  -> {/** should not happen, array of array not supported **/}
+            }
+        }
+    }
+
     private fun deserialize(data: String, delim: String, msg: MetaMessage? = null, obj: MetaObject? = null): Any {
         val deserialized = mutableListOf<Any>()
         val serialized = data.split(delim)
 
-        val fields = msg?.fields ?: obj?.fields ?: throw RuntimeException("deserialize error, learn kotlin noob x_x")
+        val fields = msg?.fields ?: obj?.fields ?: throw RuntimeException("so bad")
 
         for (i in fields.indices) {
             val serializedParam = if (i < serialized.size) serialized[i] else "0123456789" /** not enough data **/
@@ -40,6 +93,7 @@ object DofusProtocol {
             when (param.type) {
                 MetaMessageFieldType.STRING -> deserialized.add(serializedParam)
                 MetaMessageFieldType.INT    -> deserialized.add(serializedParam.toInt())
+                MetaMessageFieldType.FLOAT  -> deserialized.add(serializedParam.toFloat())
                 MetaMessageFieldType.CHAR   -> deserialized.add(serializedParam[0])
                 MetaMessageFieldType.OBJECT -> deserialized.add(deserialize(serializedParam, param.metaObject!!.delim, obj = param.metaObject))
                 MetaMessageFieldType.ARRAY  -> deserialized.add(deserializeArray(serializedParam, param))
@@ -63,6 +117,7 @@ object DofusProtocol {
                  *  TODO: improve it with native types (check @generateMetadata#genericTypeClass)
                  */
                 MetaMessageFieldType.INT    -> deserialized[i] = element.toInt()
+                MetaMessageFieldType.FLOAT  -> deserialized[i] = element.toFloat()
                 MetaMessageFieldType.CHAR   -> deserialized[i] = element[0]
                 MetaMessageFieldType.OBJECT -> deserialized[i] = deserialize(element, param.metaObject!!.delim, obj = param.metaObject)
                 MetaMessageFieldType.ARRAY  -> {/** should not happen, array of array not supported **/}
@@ -124,7 +179,7 @@ object DofusProtocol {
         }
     }
 
-    private fun generateMetadata(klass: KClass<*>, msg: MetaMessage ?= null, obj: MetaObject? = null) {
+    private fun generateMetadata(klass: KClass<*>, msg: MetaMessage? = null, obj: MetaObject? = null) {
         val fields = klass.primaryConstructor?.parameters
             ?: throw RuntimeException("No constructor found for meta object or message ${klass.qualifiedName}")
 
@@ -135,6 +190,10 @@ object DofusProtocol {
             var genericTypeClass: KClass<*>? = null
             var metaObject: MetaObject? = null
             var fieldAnnotation: Delimiter? = null
+
+            /** we do this call now so don't have to do it later for each packet received **/
+            val javaField = klass.javaObjectType.getDeclaredField(field.name!!)
+            javaField.isAccessible = true
 
             when (type) {
                 MetaMessageFieldType.OBJECT -> metaObject = resolveNesteadMetaObject(typeClass)
@@ -147,16 +206,17 @@ object DofusProtocol {
                     genericType = metaTypeOf(genericTypeClass)
 
                     when (genericType) {
-                        MetaMessageFieldType.CHAR -> genericTypeClass = Character::class
-                        MetaMessageFieldType.INT -> genericTypeClass = Integer::class
+                        MetaMessageFieldType.CHAR   -> genericTypeClass = Character::class
+                        MetaMessageFieldType.INT    -> genericTypeClass = Integer::class
+                        MetaMessageFieldType.FLOAT  -> genericTypeClass = Float::class
                         MetaMessageFieldType.OBJECT -> metaObject = resolveNesteadMetaObject(genericTypeClass)
-                        MetaMessageFieldType.ARRAY -> throw RuntimeException("Arrays of Arrays are not supported, create a meta object instead (${klass.qualifiedName})")
+                        MetaMessageFieldType.ARRAY  -> throw RuntimeException("Arrays of Arrays are not supported, create a meta object instead (${klass.qualifiedName})")
                     }
                 }
             }
 
-            msg?.fields?.add(MetaMessageField(type, genericType, genericTypeClass, metaObject, fieldAnnotation?.delimiter))
-            obj?.fields?.add(MetaMessageField(type, genericType, genericTypeClass, metaObject, fieldAnnotation?.delimiter))
+            msg?.fields?.add(MetaMessageField(javaField, type, genericType, genericTypeClass, metaObject, fieldAnnotation?.delimiter))
+            obj?.fields?.add(MetaMessageField(javaField, type, genericType, genericTypeClass, metaObject, fieldAnnotation?.delimiter))
         }
     }
 
@@ -174,6 +234,7 @@ object DofusProtocol {
         return when (klass) {
             String::class       -> MetaMessageFieldType.STRING
             Int::class          -> MetaMessageFieldType.INT
+            Float::class        -> MetaMessageFieldType.FLOAT
             Char::class         -> MetaMessageFieldType.CHAR
             IntArray::class     -> MetaMessageFieldType.ARRAY
             CharArray::class    -> MetaMessageFieldType.ARRAY

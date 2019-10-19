@@ -16,6 +16,4 @@ fun main(args: Array<String>) {
         .withWorker(1, 4)
         .start()**/
     DofusProtocol.initNodes()
-    val message = DofusProtocol.deserialize(""".{AH}.127.0.0.1|443|1000:541|1-2-3-4-5|romain,1000:1.1001:12;maxime,1000:21""") as TestMsg
-    println(message)
 }

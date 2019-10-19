@@ -2,12 +2,13 @@ package com.guiness.bot.protocol
 
 import com.guiness.bot.protocol.annotations.Message
 import com.guiness.bot.protocol.annotations.Delimiter
-import com.guiness.bot.protocol.messages.custom.TestMsg
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import java.lang.RuntimeException
 import kotlin.reflect.KClass
 import kotlin.reflect.full.*
+import org.reflections.Reflections
+
 
 fun ByteBuf.utf8(): String = this.toString(Charsets.UTF_8)
 
@@ -15,8 +16,15 @@ object DofusProtocol {
     val CLIENT_DELIMITER: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0xa, 0x0))
     val SERVER_DELIMITER: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0x0))
 
-    val messages: MutableMap<Char, MessageNode> = HashMap()
-    val classes: List<KClass<*>> = listOf(TestMsg::class)
+    private val messages: Map<Char, MessageNode>
+    private val classes: List<KClass<*>>
+
+    init {
+        val reflections = Reflections("com.guiness.bot.protocol.messages")
+
+        classes = reflections.getTypesAnnotatedWith(Message::class.java).map { it.kotlin }
+        messages = buildMessageTree()
+    }
 
     fun deserialize(packet: String): Any? {
         val meta = findMessage(packet) ?: return null
@@ -38,7 +46,7 @@ object DofusProtocol {
         return packet.toString()
     }
 
-    fun serialize(packet: StringBuilder, instance: Any, msg: MetaMessage? = null, obj: MetaObject? = null) {
+    private fun serialize(packet: StringBuilder, instance: Any, msg: MetaMessage? = null, obj: MetaObject? = null) {
         val fields = msg?.fields ?: obj?.fields ?: throw RuntimeException("so bad")
         val delim = msg?.annot?.delimiter ?: obj?.delim ?: throw RuntimeException("so bad")
 
@@ -141,7 +149,9 @@ object DofusProtocol {
         return msg
     }
 
-    fun initNodes() {
+    private fun buildMessageTree(): Map<Char, MessageNode> {
+        val messages = HashMap<Char, MessageNode>()
+
         for (klass in classes) {
             val annot: Message = klass.findAnnotation()
                 ?: throw RuntimeException("Not annotation found on packet ${klass.qualifiedName}")
@@ -177,6 +187,7 @@ object DofusProtocol {
                 }
             }
         }
+        return messages
     }
 
     private fun generateMetadata(klass: KClass<*>, msg: MetaMessage? = null, obj: MetaObject? = null) {

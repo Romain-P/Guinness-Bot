@@ -25,6 +25,7 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
     implementation("io.projectreactor.netty:reactor-netty:0.9.0.RELEASE")
+    implementation("org.reflections:reflections:0.9.10")
 }
 
 tasks.withType<KotlinCompile> {

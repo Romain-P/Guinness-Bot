@@ -17,7 +17,7 @@ data class GuildMember(
     val items: Array<Item>
 )
 
-@Message(header = ".{AH}.", target = MessageTarget.BIDIRECTIONNAL, delimiter = """|""")
+@Message(header = "TEST", target = MessageTarget.BIDIRECTIONNAL, delimiter = """|""")
 data class TestMsg(
     val ip: String,
     val port: Int,

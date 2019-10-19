@@ -17,13 +17,12 @@ object DofusProtocol {
     val SERVER_DELIMITER: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0x0))
 
     private val messages: Map<Char, MessageNode>
-    private val classes: List<KClass<*>>
 
     init {
         val reflections = Reflections("com.guiness.bot.protocol.messages")
+        val classes = reflections.getTypesAnnotatedWith(Message::class.java).map { it.kotlin }
 
-        classes = reflections.getTypesAnnotatedWith(Message::class.java).map { it.kotlin }
-        messages = buildMessageTree()
+        messages = buildMessageTree(classes)
     }
 
     fun deserialize(packet: String): Any? {
@@ -149,7 +148,7 @@ object DofusProtocol {
         return msg
     }
 
-    private fun buildMessageTree(): Map<Char, MessageNode> {
+    private fun buildMessageTree(classes: List<KClass<*>>): Map<Char, MessageNode> {
         val messages = HashMap<Char, MessageNode>()
 
         for (klass in classes) {

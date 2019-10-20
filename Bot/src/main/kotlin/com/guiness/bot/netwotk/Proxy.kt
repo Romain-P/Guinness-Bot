@@ -1,6 +1,8 @@
 package com.guiness.bot.netwotk
 
 import com.guiness.bot.core.ChannelID
+import com.guiness.bot.log.Log
+import com.guiness.bot.log.logger
 import com.guiness.bot.protocol.DofusProtocol
 import com.guiness.bot.protocol.utf8
 import io.netty.channel.ChannelOption
@@ -24,6 +26,8 @@ object Proxy {
     private lateinit var server: DisposableServer
     private var config: TcpServer
     private val clients: MutableMap<ChannelID, ProxyClientContext>
+    private val logFactory by logger()
+    private val log = logFactory.appendName("tcp")
 
     init {
         clients = HashMap()
@@ -56,22 +60,36 @@ object Proxy {
     }
 
     private fun onConnect(connection: Connection) {
-        val ctx = ProxyClientContext.of(connection)
+        val ctx = ProxyClientContext.of("downstream", connection)
         clients[connection.channel().id().asLongText()] = ctx
+        log("DOWNSTREAM", "CONNECTED", Log.LoggingLevel.GOOD)
 
+        connection.onDispose {
+            log("DOWNSTREAM", "DISCONNECTED", Log.LoggingLevel.BAD)
+            ctx.upstreamMightBeNull()?.close()
+            clients.remove(ctx.uuid())
+        }
+    }
+
+    fun connectToUpstream(ctx: ProxyClientContext, ip: String, port: Int) {
         TcpClient.create()
-            .host("127.0.0.1")
-            .port(5558)
+            .host(ip)
+            .port(port)
             .doOnConnected {
                 addHandlers(it, upstream = true)
                 ctx.attach(it)
+                log("UPSTREAM", "CONNECTED", Log.LoggingLevel.GOOD)
+            }
+            .doOnDisconnected {
+                log("UPSTREAM", "DISCONNECTED", Log.LoggingLevel.BAD)
+                ctx.downstream().close()
             }
             .handle { inbound, _ -> upstreamHandler(inbound, ctx) }
             .connect()
             .subscribe()
     }
 
-    fun addHandlers(connection: Connection, upstream: Boolean = false, downstream: Boolean = false) {
+    private fun addHandlers(connection: Connection, upstream: Boolean = false, downstream: Boolean = false) {
         val decoder = if (upstream) DofusProtocol.SERVER_DELIMITER else DofusProtocol.CLIENT_DELIMITER
         val encoder = if (upstream) DofusProtocol.CLIENT_DELIMITER else DofusProtocol.SERVER_DELIMITER
 
@@ -97,5 +115,43 @@ object Proxy {
     fun start() {
         server = config.bindNow()
         server.onDispose().block()
+    }
+
+    fun log(msg: Any, source: ProxyClientStream? = null, target: ProxyClientStream? = null, forwarded: Boolean = false) {
+        val from = when (source) {
+            null -> "proxy"
+            else -> source.label
+        }
+
+        val to = when (target) {
+            null -> "proxy"
+            else -> target.label
+        }
+
+        log(from, to, msg, forwarded ?: false)
+    }
+
+    private fun log(from: String, to: String, msg: Any, forwarded: Boolean = false) {
+        val sendType = when(forwarded) {
+            true -> "FORWARDED"
+            false -> "SENT"
+        }
+
+        log.info("%-12s %-11s ---> %-15s: %s",
+            "[${from.toUpperCase()}]", "[${sendType.toUpperCase()}]", "[${to.toUpperCase()}]", msg)
+    }
+
+    fun log(who: String, info: String, level: Log.LoggingLevel) {
+        val str = String.format("%-12s %-11s", "[${who.toUpperCase()}]", "[${info.toUpperCase()}]")
+
+        when (level) {
+            Log.LoggingLevel.DEBUG  -> log.debug(str)
+            Log.LoggingLevel.INFO   -> log.info(str)
+            Log.LoggingLevel.GOOD   -> log.good(str)
+            Log.LoggingLevel.BAD    -> log.bad(str)
+            Log.LoggingLevel.WARN   -> log.warn(str)
+            Log.LoggingLevel.ERROR  -> log.error(str)
+            Log.LoggingLevel.TODO   -> log.todo(str)
+        }
     }
 }

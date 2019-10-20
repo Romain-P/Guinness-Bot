@@ -12,12 +12,13 @@ class ProxyClientContext(
 
     fun downstream() = downstream
     fun upstream() : ProxyClientStream = upstream!!
+    fun upstreamMightBeNull() = upstream
 
     fun attach(upstreamConnection: Connection) {
-        this.upstream = ProxyClientStream(upstreamConnection)
+        this.upstream = ProxyClientStream("upstream", upstreamConnection)
     }
 
     companion object {
-        fun of(connection: Connection) = ProxyClientContext(ProxyClientStream(connection))
+        fun of(label: String, connection: Connection) = ProxyClientContext(ProxyClientStream(label, connection))
     }
 }

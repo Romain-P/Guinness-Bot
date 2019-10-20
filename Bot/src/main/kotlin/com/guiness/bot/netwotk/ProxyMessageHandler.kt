@@ -1,6 +1,8 @@
 package com.guiness.bot.netwotk
 
 import com.guiness.bot.core.MessageKClass
+import com.guiness.bot.log.Log
+import com.guiness.bot.log.logger
 import com.guiness.bot.netwotk.shared.MessageHandler
 import com.guiness.bot.netwotk.shared.PipelineOperation
 import com.guiness.bot.netwotk.shared.StreamOperation
@@ -21,6 +23,7 @@ import kotlin.reflect.full.findAnnotation
 object ProxyMessageHandler {
     private val upstreamHandlers: Map<MessageKClass, List<MessageHandler>>
     private val downStreamHandlers: Map<MessageKClass, List<MessageHandler>>
+    private val log by logger()
 
     init {
         val reflections = Reflections("com.guiness.bot.controllers")
@@ -36,24 +39,28 @@ object ProxyMessageHandler {
     }
 
     fun onDownstreamReceive(ctx: ProxyClientContext, packet: String) {
-        onReceive(packet, ctx, ctx.upstream(), downStreamHandlers)
+        onReceive(packet, ctx, ctx.downstream(), ctx.upstreamMightBeNull(), downStreamHandlers)
     }
 
     fun onUpstreamReceive(ctx: ProxyClientContext, packet: String) {
-        onReceive(packet, ctx, ctx.downstream(), upstreamHandlers)
+        onReceive(packet, ctx, ctx.upstream(), ctx.downstream(), upstreamHandlers)
     }
 
-    private fun onReceive(packet: String, ctx: ProxyClientContext, targetStream: ProxyClientStream, handlers: Map<MessageKClass, List<MessageHandler>>) {
+    private fun onReceive(packet: String, ctx: ProxyClientContext, sourceStream: ProxyClientStream,
+                          targetStream: ProxyClientStream?, handlersGroup: Map<MessageKClass, List<MessageHandler>>)
+    {
         val message = DofusProtocol.deserialize(packet)
 
+        Proxy.log(message ?: packet, source = sourceStream)
+
         if (message == null) {
-            targetStream.write(packet).flush()
+            targetStream?.write(packet, true, true)?.flush()
             return
         }
 
-        val handlers = upstreamHandlers[message::class]
+        val handlers = handlersGroup[message::class]
         if (handlers == null || handlers.isEmpty()) {
-            targetStream.write(packet).flush()
+            targetStream?.write(message, true, true)?.flush()
             return
         }
 
@@ -68,10 +75,11 @@ object ProxyMessageHandler {
                 else       -> handler.then == StreamOperation.DISCARD
             }
         }
-        if (!discard)
+        if (!discard && targetStream != null)
             targetStream.write(DofusProtocol.serialize(message)!!).flush()
 
-        ctx.upstream().flush()
+        if (targetStream != null)
+            ctx.upstream().flush()
         ctx.downstream().flush()
     }
 

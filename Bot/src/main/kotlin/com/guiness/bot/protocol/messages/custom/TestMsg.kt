@@ -2,7 +2,7 @@ package com.guiness.bot.protocol.messages.custom
 
 import com.guiness.bot.protocol.annotations.Message
 import com.guiness.bot.protocol.annotations.Delimiter
-import com.guiness.bot.protocol.annotations.MessageTarget
+import com.guiness.bot.protocol.annotations.StreamSource
 
 @Delimiter(":")
 data class Item(
@@ -17,7 +17,7 @@ data class GuildMember(
     val items: Array<Item>
 )
 
-@Message(header = "TEST", target = MessageTarget.BIDIRECTIONNAL, delimiter = """|""")
+@Message(header = "TEST", source = StreamSource.ANYSTREAM, delimiter = """|""")
 data class TestMsg(
     val ip: String,
     val port: Int,

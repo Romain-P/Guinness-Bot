@@ -1,8 +1,7 @@
 package com.guiness.bot.protocol.annotations
 
-enum class MessageTarget {
+enum class StreamSource {
     UPSTREAM,
     DOWNSTREAM,
-    BIDIRECTIONNAL,
-    MITM
+    ANYSTREAM
 }

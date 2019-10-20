@@ -9,5 +9,8 @@ data class MetaMessage(
     val klass: KClass<*>,
     val fields: MutableList<MetaMessageField> = mutableListOf()
 ) {
-    fun createInstance(vararg args: Any?) = klass.primaryConstructor!!.call(*args)
+    fun createInstance(vararg args: Any?) = when(args.size) {
+        0    -> klass.primaryConstructor!!.call()
+        else -> klass.primaryConstructor!!.call(*args)
+    }
 }

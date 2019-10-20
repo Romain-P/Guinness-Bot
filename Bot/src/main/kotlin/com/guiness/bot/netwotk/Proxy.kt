@@ -40,30 +40,19 @@ object Proxy {
     private fun downstreamHandler(inbound: NettyInbound, outbound: NettyOutbound): Publisher<Void> {
         inbound.withConnection {con ->
             con.inbound().receiveObject().subscribe {
-                onDownstreamReceive(clients[con.channel().id().asLongText()]!!, it as String)
+                ProxyMessageHandler.onDownstreamReceive(clients[con.channel().id().asLongText()]!!, it as String)
             }
         }
         return Flux.never()
     }
 
-    private fun upstreamHandler(inbound: NettyInbound, ctx: ProxyClientContext): Publisher<Void> {
+    fun upstreamHandler(inbound: NettyInbound, ctx: ProxyClientContext): Publisher<Void> {
         inbound.withConnection {con ->
             con.inbound().receiveObject().subscribe {
-                onUpstreamReceive(ctx, it as String)
+                ProxyMessageHandler.onUpstreamReceive(ctx, it as String)
             }
         }
         return Flux.never()
-    }
-
-    private fun onDownstreamReceive(ctx: ProxyClientContext, packet: String) {
-        println("[Downstream ${ctx.uuid()}] Received $packet")
-        ctx.downstream().send("Ok j'ai reçu tho")
-    }
-
-    private fun onUpstreamReceive(ctx: ProxyClientContext, packet: String) {
-        println("[Upstream ${ctx.uuid()}] Received $packet")
-        ctx.upstream().send("Ok j'ai reçu tho")
-        ctx.downstream().send("ezpz")
     }
 
     private fun onConnect(connection: Connection) {
@@ -82,7 +71,7 @@ object Proxy {
             .subscribe()
     }
 
-    private fun addHandlers(connection: Connection, upstream: Boolean = false, downstream: Boolean = false) {
+    fun addHandlers(connection: Connection, upstream: Boolean = false, downstream: Boolean = false) {
         val decoder = if (upstream) DofusProtocol.SERVER_DELIMITER else DofusProtocol.CLIENT_DELIMITER
         val encoder = if (upstream) DofusProtocol.CLIENT_DELIMITER else DofusProtocol.SERVER_DELIMITER
 

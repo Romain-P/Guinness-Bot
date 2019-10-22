@@ -2,6 +2,7 @@ package com.guiness.bot.protocol
 
 import com.guiness.bot.protocol.annotations.Message
 import com.guiness.bot.protocol.annotations.Delimiter
+import com.guiness.bot.protocol.annotations.Size
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import java.lang.RuntimeException
@@ -30,8 +31,9 @@ object DofusProtocol {
 
         val delim = meta.annot.delimiter
         val data = packet.substring(meta.annot.header.length)
+        val reader = PacketReader(data, delim)
 
-        return deserialize(data, delim, msg = meta)
+        return deserialize(reader, msg = meta)
     }
 
     fun serialize(message: Any): String? {
@@ -87,51 +89,67 @@ object DofusProtocol {
         }
     }
 
-    private fun deserialize(data: String, delim: String, msg: MetaMessage? = null, obj: MetaObject? = null): Any {
-        val deserialized = mutableListOf<Any>()
-        val serialized = data.split(delim)
+    private fun deserialize(reader: PacketReader, msg: MetaMessage? = null, obj: MetaObject? = null): Any {
+        val deserialized = mutableListOf<Any?>()
 
         val fields = msg?.fields ?: obj?.fields ?: throw RuntimeException("so bad")
 
         for (i in fields.indices) {
-            val serializedParam = if (i < serialized.size) serialized[i] else "0123456789" /** not enough data **/
             val param = fields[i]
+
+            val serializedParam = when(param.type) {
+                MetaMessageFieldType.ARRAY -> null
+                MetaMessageFieldType.OBJECT -> null
+                else -> reader.readNext()
+                    ?: when (param.genericTypeNullable) {
+                        false -> "01234567890"
+                        else -> null
+                    }
+            }
 
             when (param.type) {
                 MetaMessageFieldType.STRING -> deserialized.add(serializedParam)
-                MetaMessageFieldType.INT    -> deserialized.add(serializedParam.toInt())
-                MetaMessageFieldType.FLOAT  -> deserialized.add(serializedParam.toFloat())
-                MetaMessageFieldType.CHAR   -> deserialized.add(serializedParam[0])
-                MetaMessageFieldType.OBJECT -> deserialized.add(deserialize(serializedParam, param.metaObject!!.delim, obj = param.metaObject))
-                MetaMessageFieldType.ARRAY  -> deserialized.add(deserializeArray(serializedParam, param))
+                MetaMessageFieldType.INT    -> deserialized.add(serializedParam?.toInt())
+                MetaMessageFieldType.FLOAT  -> deserialized.add(serializedParam?.toFloat())
+                MetaMessageFieldType.CHAR   -> deserialized.add(serializedParam?.get(0))
+                MetaMessageFieldType.OBJECT -> deserialized.add(deserialize(reader.child(param.delimiter!!), obj = param.metaObject))
+                MetaMessageFieldType.ARRAY  -> deserialized.add(deserializeArray(reader.child(param.delimiter!!), param))
             }
         }
 
         return msg?.createInstance(*deserialized.toTypedArray()) ?: obj!!.createInstance(*deserialized.toTypedArray())
     }
 
-    private fun deserializeArray(serializedParam: String, param: MetaMessageField): Array<*> {
-        val delimiter = param.delimiter!!
-        val data = serializedParam.split(delimiter)
+    private fun deserializeArray(reader: PacketReader, param: MetaMessageField): Array<*> {
+        val size = param.arraySize
+        val deserialized = ArrayList<Any?>()
+        var i = 0
 
-        val deserialized = java.lang.reflect.Array.newInstance(param.genericTypeClass!!.java, data.size) as Array<Any>
-        for (i in data.indices) {
-            val element = data[i]
+        do {
+            val element = when(param.genericType) {
+                MetaMessageFieldType.ARRAY  -> null
+                MetaMessageFieldType.OBJECT -> null
+                else  -> reader.readNext()
+                    ?: when (param.genericTypeNullable) {
+                        false -> "01234567890"
+                        else -> null
+                    }
+            }
 
             when (param.genericType) {
-                MetaMessageFieldType.STRING -> deserialized[i] = element
-                /** INT and CHAR arrays are automatically converted to Array<Integer> and Array<Char>
-                 *  TODO: improve it with native types (check @generateMetadata#genericTypeClass)
-                 */
-                MetaMessageFieldType.INT    -> deserialized[i] = element.toInt()
-                MetaMessageFieldType.FLOAT  -> deserialized[i] = element.toFloat()
-                MetaMessageFieldType.CHAR   -> deserialized[i] = element[0]
-                MetaMessageFieldType.OBJECT -> deserialized[i] = deserialize(element, param.metaObject!!.delim, obj = param.metaObject)
+                MetaMessageFieldType.STRING -> deserialized.add(element)
+                MetaMessageFieldType.INT    -> deserialized.add(element?.toInt())
+                MetaMessageFieldType.FLOAT  -> deserialized.add(element?.toFloat())
+                MetaMessageFieldType.CHAR   -> deserialized.add(element?.get(0))
+                MetaMessageFieldType.OBJECT -> deserialized.add(deserialize(reader.child(param.metaObject!!.delim), obj = param.metaObject))
                 MetaMessageFieldType.ARRAY  -> {/** should not happen, array of array not supported **/}
             }
-        }
+        } while (if (size != null) (++i < size) else reader.hasNext())
 
-        return deserialized
+        val cast = java.lang.reflect.Array.newInstance(param.genericTypeClass!!.java, deserialized.size) as Array<Any?>
+        System.arraycopy(deserialized.toTypedArray(), 0, cast, 0, deserialized.size)
+
+        return cast
     }
 
     private fun findMessage(packet: String): MetaMessage? {
@@ -193,48 +211,60 @@ object DofusProtocol {
         val fields = klass.primaryConstructor?.parameters
             ?: throw RuntimeException("No constructor found for meta object or message ${klass.qualifiedName}")
 
-        for (field in fields) {
+        val parentDelimiter: String = msg?.annot?.delimiter ?: obj?.delim!!
+
+        for (i in fields.indices) {
+            val field = fields[i]
             val typeClass = field.type.classifier as KClass<*>
+            var nullable = field.type.isMarkedNullable
             val type = metaTypeOf(typeClass)
             var genericType: MetaMessageFieldType? = null
             var genericTypeClass: KClass<*>? = null
+            var genericTypeNullable: Boolean? = null
             var metaObject: MetaObject? = null
-            var fieldAnnotation: Delimiter? = null
+            var fieldDelimiter: String? = null
+            var arraySize: Int? = field.findAnnotation<Size>()?.size
 
             /** we do this call now so don't have to do it later for each packet received **/
             val javaField = klass.javaObjectType.getDeclaredField(field.name!!)
             javaField.isAccessible = true
 
-            when (type) {
-                MetaMessageFieldType.OBJECT -> metaObject = resolveNesteadMetaObject(typeClass)
-                MetaMessageFieldType.ARRAY -> {
-                    fieldAnnotation = field.findAnnotation()
-                        ?: throw RuntimeException("Expected an annotation on type Array for meta object or message ${klass.qualifiedName}")
+            /** resolve delimiter of object/array **/
+            if (type == MetaMessageFieldType.OBJECT || type == MetaMessageFieldType.ARRAY) {
+                val annotDelimiter: String? = field.findAnnotation<Delimiter>()?.delimiter
+                    ?: typeClass.findAnnotation<Delimiter>()?.delimiter
 
+                fieldDelimiter = annotDelimiter ?: parentDelimiter
+            }
+
+            /** fetch meta data of object/array **/
+            when (type) {
+                MetaMessageFieldType.OBJECT -> metaObject = resolveNesteadMetaObject(typeClass, fieldDelimiter!!)
+                MetaMessageFieldType.ARRAY -> {
+                    val genericParam = field.type.arguments.getOrNull(0)?.type
                     genericTypeClass = field.type.arguments.getOrNull(0)?.type?.classifier as KClass<*>?
                         ?: throw RuntimeException("Expected a generic type on type Array for meta object or message ${klass.qualifiedName}")
                     genericType = metaTypeOf(genericTypeClass)
+                    genericTypeNullable = genericParam?.isMarkedNullable
+                    val genericTypeDelimiter = genericTypeClass.findAnnotation<Delimiter>()?.delimiter ?: parentDelimiter
 
                     when (genericType) {
                         MetaMessageFieldType.CHAR   -> genericTypeClass = Character::class
                         MetaMessageFieldType.INT    -> genericTypeClass = Integer::class
                         MetaMessageFieldType.FLOAT  -> genericTypeClass = Float::class
-                        MetaMessageFieldType.OBJECT -> metaObject = resolveNesteadMetaObject(genericTypeClass)
+                        MetaMessageFieldType.OBJECT -> metaObject = resolveNesteadMetaObject(genericTypeClass, genericTypeDelimiter)
                         MetaMessageFieldType.ARRAY  -> throw RuntimeException("Arrays of Arrays are not supported, create a meta object instead (${klass.qualifiedName})")
                     }
                 }
             }
 
-            msg?.fields?.add(MetaMessageField(javaField, type, genericType, genericTypeClass, metaObject, fieldAnnotation?.delimiter))
-            obj?.fields?.add(MetaMessageField(javaField, type, genericType, genericTypeClass, metaObject, fieldAnnotation?.delimiter))
+            msg?.fields?.add(MetaMessageField(javaField, type, nullable, genericType, genericTypeNullable, genericTypeClass, metaObject, fieldDelimiter, arraySize))
+                ?: obj?.fields?.add(MetaMessageField(javaField, type, nullable, genericType, genericTypeNullable, genericTypeClass, metaObject, fieldDelimiter, arraySize))
         }
     }
 
-    private fun resolveNesteadMetaObject(metaObjectClass: KClass<*>): MetaObject {
-        val classAnnotation: Delimiter = metaObjectClass.findAnnotation()
-            ?: throw RuntimeException("Expected an annotation on meta object ${metaObjectClass.qualifiedName}")
-
-        val metaObject = MetaObject(classAnnotation.delimiter, metaObjectClass)
+    private fun resolveNesteadMetaObject(metaObjectClass: KClass<*>, delimiter: String): MetaObject {
+        val metaObject = MetaObject(delimiter, metaObjectClass)
         generateMetadata(metaObjectClass, obj = metaObject)
 
         return metaObject

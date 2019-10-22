@@ -6,8 +6,11 @@ import kotlin.reflect.KClass
 data class MetaMessageField(
     val javaField: Field,
     val type: MetaMessageFieldType,
-    val genericType: MetaMessageFieldType? = null,
-    val genericTypeClass: KClass<*>? = null,
-    val metaObject: MetaObject? = null,/** present if type or genericType == OBJECT **/
-    val delimiter: String? = null
+    val nullable: Boolean,
+    val genericType: MetaMessageFieldType?,
+    val genericTypeNullable: Boolean?,
+    val genericTypeClass: KClass<*>?,
+    val metaObject: MetaObject?, /** present if type or genericType == OBJECT **/
+    val delimiter: String?,
+    val arraySize: Int?
 )

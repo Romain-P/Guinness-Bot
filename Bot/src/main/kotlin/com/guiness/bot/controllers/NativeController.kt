@@ -7,19 +7,25 @@ import com.guiness.bot.netwotk.shared.PipelineOperation
 import com.guiness.bot.netwotk.shared.StreamOperation
 import com.guiness.bot.netwotk.shared.annotations.Controller
 import com.guiness.bot.netwotk.shared.annotations.FromDownstream
-import com.guiness.bot.protocol.messages.custom.AuthServerInfoMsg
-import com.guiness.bot.protocol.messages.custom.GameServerInfoMsg
+import com.guiness.bot.protocol.messages.custom.AuthServerInfoMessage
+import com.guiness.bot.protocol.messages.custom.GameServerInfoMessage
+import com.guiness.bot.protocol.messages.custom.GameTicketMessage
 
 @Controller
 class NativeController {
 
     @FromDownstream(then = StreamOperation.DISCARD, priority = HandlerPriority.HIGHTEST, pipeline = PipelineOperation.BREAK)
-    fun onLoginConnection(ctx: ProxyClientContext, msg: AuthServerInfoMsg) {
+    fun onLoginConnection(ctx: ProxyClientContext, msg: AuthServerInfoMessage) {
         Proxy.connectToUpstream(ctx, msg.ip, msg.port)
     }
 
     @FromDownstream(then = StreamOperation.DISCARD, priority = HandlerPriority.HIGHTEST, pipeline = PipelineOperation.BREAK)
-    fun onGameConnection(ctx: ProxyClientContext, msg: GameServerInfoMsg) {
+    fun onGameConnection(ctx: ProxyClientContext, msg: GameServerInfoMessage) {
         Proxy.connectToUpstream(ctx, msg.ip, msg.port)
+    }
+
+    @FromDownstream(then = StreamOperation.DISCARD, priority = HandlerPriority.HIGHTEST, pipeline = PipelineOperation.BREAK)
+    fun onGameTicket(ctx: ProxyClientContext, msg: GameTicketMessage) {
+
     }
 }

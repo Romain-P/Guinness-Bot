@@ -28,9 +28,9 @@ class ProxyClientStream(
                     Proxy.log(pending.packet, target = this, forwarded = pending.forwarded)
                 }
                 false -> {
-                    val message = DofusProtocol.deserialize(pending.packet as String)!!
-                    channel.writeAndFlush(message)
-                    Proxy.log(message, target = this, forwarded = pending.forwarded)
+                    val packet = DofusProtocol.serialize(pending.packet)!!
+                    channel.writeAndFlush(packet)
+                    Proxy.log(pending.packet, target = this, forwarded = pending.forwarded)
                 }
             }
         }

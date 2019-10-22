@@ -223,7 +223,7 @@ object DofusProtocol {
             var genericTypeNullable: Boolean? = null
             var metaObject: MetaObject? = null
             var fieldDelimiter: String? = null
-            var arraySize: Int? = field.findAnnotation<Size>()?.size
+            val arraySize: Int? = field.findAnnotation<Size>()?.size
 
             /** we do this call now so don't have to do it later for each packet received **/
             val javaField = klass.javaObjectType.getDeclaredField(field.name!!)

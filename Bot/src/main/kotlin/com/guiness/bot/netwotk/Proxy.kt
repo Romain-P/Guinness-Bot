@@ -71,7 +71,7 @@ object Proxy {
         }
     }
 
-    fun connectToUpstream(ctx: ProxyClientContext, ip: String, port: Int) {
+    fun connectToUpstream(ctx: ProxyClientContext, ip: String, port: Int, ticket: String? = null) {
         TcpClient.create()
             .host(ip)
             .port(port)

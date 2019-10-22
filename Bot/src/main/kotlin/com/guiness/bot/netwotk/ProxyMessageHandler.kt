@@ -76,7 +76,7 @@ object ProxyMessageHandler {
             }
         }
         if (!discard && targetStream != null)
-            targetStream.write(DofusProtocol.serialize(message)!!).flush()
+            targetStream.write(message).flush()
 
         if (targetStream != null)
             ctx.upstream().flush()

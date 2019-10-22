@@ -4,7 +4,7 @@ import com.guiness.bot.protocol.annotations.Message
 import com.guiness.bot.protocol.annotations.StreamSource
 
 @Message(header = ".{AH}.", source = StreamSource.DOWNSTREAM, delimiter = ":")
-data class AuthServerInfoMsg(
+data class AuthServerInfoMessage(
     val ip: String,
     val port: Int
 )

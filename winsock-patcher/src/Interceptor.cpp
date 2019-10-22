@@ -7,7 +7,6 @@
 #include <fstream>
 #include <commdlg.h>
 #include <iostream>
-#include <vector>
 #include <sstream>
 
 Interceptor ctx;
@@ -31,30 +30,35 @@ int WINAPI onRecv(SOCKET socket, char *buffer, int len, int flags) {
     inet_ntop(AF_INET, &(sock.sin_addr), sourceIp, INET_ADDRSTRLEN);
     auto sourcePort = ntohs(sock.sin_port);
 
-    /** we only intercept auth packets **/
-    if (sourcePort != Interceptor::ankama_auth_port || ctx.gameIp() == sourceIp)
-        return winsockRecv(socket, buffer, len, flags);
+    int result = winsockRecv(socket, buffer, len, flags);
+
+    if (result <= 0 || !ctx.listenPackets() || sourcePort != Interceptor::proxy_port || strcmp(sourceIp, Interceptor::localhost) != 0)
+        return result;
 
     /** append buffer **/
-    ctx.globalBuffer().insert(ctx.globalBuffer().end(), buffer, buffer + len);
-    SIZE_T pos;
+    ctx.globalBuffer().insert(ctx.globalBuffer().end(), buffer, buffer + result);
 
-    /** check if a several valid packets are found **/
-    while ((pos = ctx.globalBuffer().find('\n')) != std::string::npos) {
-        std::string packet = ctx.globalBuffer().substr(0, pos);
+    std::vector<char>::iterator it;
+    while(!ctx.globalBuffer().empty() && (it = std::find(ctx.globalBuffer().begin(), ctx.globalBuffer().end(), Interceptor::ankama_packet_delimiter)) != ctx.globalBuffer().end()) {
+        std::string packet(ctx.globalBuffer().begin(), it);
 
         /** check if the server list packet is found **/
         if (packet.rfind(Interceptor::game_select_packet_header, 0) != std::string::npos) {
             std::string data = packet.substr(strlen(Interceptor::game_select_packet_header));
             /** catch game port and ip **/
             ctx.uncompressGameIP(data.c_str(), data.size());
+            std::string ticketPacket = Interceptor::auth_game_ticket_header + ctx.gameTicket();
+            std::vector<char> packetBuff;
+            packetBuff.insert(packetBuff.end(), ticketPacket.begin(), ticketPacket.end());
+            packetBuff.insert(packetBuff.end(), Interceptor::client_packet_delimiter, Interceptor::client_packet_delimiter + sizeof(Interceptor::client_packet_delimiter));
+            send(socket, &packetBuff[0], packetBuff.size(), 0);
         }
 
         /** next packet **/
-        ctx.globalBuffer() = ctx.globalBuffer().substr(pos + 1, ctx.globalBuffer().size());
+        ctx.globalBuffer().erase(ctx.globalBuffer().begin(), it + 1);
     }
 
-    return winsockRecv(socket, buffer, len, flags);
+    return result;
 }
 
 int WINAPI onConnect(SOCKET socket, const sockaddr *addr, int length) {
@@ -65,13 +69,19 @@ int WINAPI onConnect(SOCKET socket, const sockaddr *addr, int length) {
     inet_ntop(AF_INET, &(sock->sin_addr), targetIp, INET_ADDRSTRLEN);
 
     std::string packetHeader;
+    bool gameConnect = false;
 
     /** if the connection is targeting a game server **/
-    if (ctx.gameIp() == targetIp && targetPort == ctx.gamePort())
+    if (!ctx.gameIp().empty() && ctx.gameIp() == targetIp && targetPort == ctx.gamePort()) {
+        gameConnect = true;
+        ctx.listenPackets() = false;
         packetHeader = Interceptor::game_packet_header;
+    }
     /** if the connection is targeting the auth server **/
-    else if (targetPort == Interceptor::ankama_auth_port)
+    else if (targetPort == Interceptor::ankama_auth_port) {
+        ctx.listenPackets() = true;
         packetHeader = Interceptor::auth_packet_header;
+    }
     /** any other port/ip are skipped **/
     else
         return winsockConnect(socket, addr, length);
@@ -93,10 +103,15 @@ int WINAPI onConnect(SOCKET socket, const sockaddr *addr, int length) {
      *
      * e.g .{AI}.0.0.0.0:443  => Ankama auth server (ip = 0.0.0.0 | port = 443)
      */
-    std::stringstream ss;
-    ss << packetHeader << targetIp << ':' << targetPort << '\n';
-    std::string packet = ss.str();
-    send(socket, packet.c_str(), packet.size(), 0);
+    std::string packet = packetHeader + targetIp + ':' + std::to_string(targetPort);
+    if (gameConnect) {
+        packet += ':' + ctx.gameTicket();
+        ctx.resetGameInformations();
+    }
+    std::vector<char> buffer;
+    buffer.insert(buffer.end(), packet.begin(), packet.end());
+    buffer.insert(buffer.end(), Interceptor::client_packet_delimiter, Interceptor::client_packet_delimiter + sizeof(Interceptor::client_packet_delimiter));
+    send(socket, &buffer[0], buffer.size(), 0);
 
     return result;
 }
@@ -127,6 +142,15 @@ std::string const &Interceptor::gameIp() const {
     return _gameIp;
 }
 
+bool &Interceptor::listenPackets() {
+    return _listenPackets;
+}
+
+std::string const &Interceptor::gameTicket() const {
+    return _gameTicket;
+}
+
+
 void Interceptor::uncompressGameIP(char const *data, SIZE_T len) {
     static std::string BASE = {
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
@@ -138,7 +162,6 @@ void Interceptor::uncompressGameIP(char const *data, SIZE_T len) {
     std::string wrap(data, data + len);
     std::string ipPart = wrap.substr(0, 8);
     std::string portPart = wrap.substr(8, 3);
-    std::string ticketId = wrap.substr(11);
     std::vector<int> ipBytes;
 
     for (size_t i = 0; i < 8; i += 2) {
@@ -156,8 +179,15 @@ void Interceptor::uncompressGameIP(char const *data, SIZE_T len) {
 
     _gamePort = (BASE.find(portPart[0]) & 63) << 12 | (BASE.find(portPart[1]) & 63) << 6 | (BASE.find(portPart[2]) & 63);
     _gameIp = ss.str();
+    _gameTicket = wrap.substr(11);
 }
 
-std::string &Interceptor::globalBuffer() {
+std::vector<char> &Interceptor::globalBuffer() {
     return _globalBuffer;
+}
+
+void Interceptor::resetGameInformations() {
+    _gameIp.clear();
+    _gamePort = 0;
+    _gameTicket.clear();
 }

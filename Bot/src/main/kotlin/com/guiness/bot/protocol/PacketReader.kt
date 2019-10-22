@@ -33,25 +33,6 @@ class PacketReader {
 
     fun child(delim: String) = child(delim[0])
 
-    /** /!\ Must be call only for arrays with unknown size **/
-    fun remainingElements(): Int {
-        if (packet.isEmpty() || sharedIndex[0] == packet.length) return 0
-
-        val index = sharedIndex[0]
-        var count = 0
-        val delim = stack.last()
-
-        for (i in index..packet.lastIndex) {
-            val char = packet[i]
-
-            if (char == delim) {
-                ++count
-            } else if (i == packet.lastIndex)
-                return ++count;
-        }
-        return count
-    }
-
     fun readNext(): String? {
         if (consumed || packet.isEmpty() || sharedIndex[0] == packet.length)
             return null

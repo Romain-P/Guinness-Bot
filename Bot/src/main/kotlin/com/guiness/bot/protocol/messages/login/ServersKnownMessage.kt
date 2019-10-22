@@ -11,8 +11,7 @@ data class KnownServer(
 )
 
 @Message(header = "AxK", source = StreamSource.UPSTREAM, delimiter = "|")
-data class ServersKnownMsg(
+data class ServersKnownMessage(
     val subscriptionTime: Int,
-    @Delimiter(";")
     val servers: Array<KnownServer>
 )

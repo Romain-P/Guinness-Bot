@@ -1,7 +1,11 @@
 package com.guiness.bot.protocol
 
+import com.guiness.bot.core.intValue
+import com.guiness.bot.core.longValue
+import com.guiness.bot.core.stringValue
 import com.guiness.bot.protocol.annotations.Message
 import com.guiness.bot.protocol.annotations.Delimiter
+import com.guiness.bot.protocol.annotations.Hex
 import com.guiness.bot.protocol.annotations.Size
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
@@ -53,15 +57,18 @@ object DofusProtocol {
 
         for (i in fields.indices) {
             val field = fields[i]
-            val value = field.javaField.get(instance) ?: ""
+            val value = field.javaField.get(instance)
+            val isHexadecimal = field.hex
 
             if (i > 0)
                 packet.append(delim)
 
             when (field.type) {
-                MetaMessageFieldType.OBJECT -> serialize(packet, value, obj = field.metaObject)
-                MetaMessageFieldType.ARRAY  -> serializeArray(packet, field, value)
-                else                        -> packet.append(value)
+                MetaMessageFieldType.INT    -> packet.append((value as Int?)?.stringValue(isHexadecimal) ?: "")
+                MetaMessageFieldType.LONG   -> packet.append((value as Long?)?.stringValue(isHexadecimal) ?: "")
+                MetaMessageFieldType.OBJECT -> serialize(packet, value ?: "", obj = field.metaObject)
+                MetaMessageFieldType.ARRAY  -> serializeArray(packet, field, value ?: "")
+                else                        -> packet.append(value ?: "")
             }
         }
     }
@@ -70,23 +77,19 @@ object DofusProtocol {
         val array = value as Array<Any?>
 
         for (i in array.indices) {
-            val elem = array[i] ?: ""
+            val elem = array[i]
+            val isHexadecimal = field.genericTypeHex!!
 
             if (i > 0)
                 packet.append(field.delimiter)
 
             when(field.genericType) {
-                MetaMessageFieldType.OBJECT -> serialize(packet, elem, obj = field.metaObject)
+                MetaMessageFieldType.INT    -> packet.append((elem as Int?)?.stringValue(isHexadecimal) ?: "")
+                MetaMessageFieldType.LONG   -> packet.append((elem as Long?)?.stringValue(isHexadecimal) ?: "")
+                MetaMessageFieldType.OBJECT -> serialize(packet, elem ?: "", obj = field.metaObject)
                 MetaMessageFieldType.ARRAY  -> {/** should not happen, array of array not supported **/}
-                else                        -> packet.append(elem)
+                else                        -> packet.append(elem ?: "")
             }
-        }
-    }
-
-    inline fun <reified T> serializeElement(elem: T?): T? {
-        return when (elem) {
-            null -> null
-            else -> elem
         }
     }
 
@@ -97,6 +100,7 @@ object DofusProtocol {
 
         for (i in fields.indices) {
             val param = fields[i]
+            val isHexadecimal = param.hex
 
             val serializedParam = when(param.type) {
                 MetaMessageFieldType.ARRAY -> null
@@ -110,7 +114,8 @@ object DofusProtocol {
 
             when (param.type) {
                 MetaMessageFieldType.STRING -> deserialized.add(serializedParam)
-                MetaMessageFieldType.INT    -> deserialized.add(serializedParam?.toInt())
+                MetaMessageFieldType.LONG   -> deserialized.add(serializedParam?.longValue(isHexadecimal))
+                MetaMessageFieldType.INT    -> deserialized.add(serializedParam?.intValue(isHexadecimal))
                 MetaMessageFieldType.FLOAT  -> deserialized.add(serializedParam?.toFloat())
                 MetaMessageFieldType.CHAR   -> deserialized.add(serializedParam?.get(0))
                 MetaMessageFieldType.OBJECT -> deserialized.add(deserialize(reader.child(param.delimiter!!), obj = param.metaObject))
@@ -137,9 +142,12 @@ object DofusProtocol {
                     }
             }
 
+            val isHexadecimal = param.genericTypeHex!!
+
             when (param.genericType) {
                 MetaMessageFieldType.STRING -> deserialized.add(element)
-                MetaMessageFieldType.INT    -> deserialized.add(element?.toInt())
+                MetaMessageFieldType.LONG   -> deserialized.add(element?.longValue(isHexadecimal))
+                MetaMessageFieldType.INT    -> deserialized.add(element?.intValue(isHexadecimal))
                 MetaMessageFieldType.FLOAT  -> deserialized.add(element?.toFloat())
                 MetaMessageFieldType.CHAR   -> deserialized.add(element?.get(0))
                 MetaMessageFieldType.OBJECT -> deserialized.add(deserialize(reader.child(param.metaObject!!.delim), obj = param.metaObject))
@@ -217,11 +225,13 @@ object DofusProtocol {
         for (i in fields.indices) {
             val field = fields[i]
             val typeClass = field.type.classifier as KClass<*>
-            var nullable = field.type.isMarkedNullable
+            val nullable = field.type.isMarkedNullable
+            val hex = field.type.findAnnotation<Hex>() != null
             val type = metaTypeOf(typeClass)
             var genericType: MetaMessageFieldType? = null
             var genericTypeClass: KClass<*>? = null
             var genericTypeNullable: Boolean? = null
+            var genericTypeHex = false
             var metaObject: MetaObject? = null
             var fieldDelimiter: String? = null
             val arraySize: Int? = field.findAnnotation<Size>()?.size
@@ -243,14 +253,18 @@ object DofusProtocol {
                 MetaMessageFieldType.OBJECT -> metaObject = resolveNesteadMetaObject(typeClass, fieldDelimiter!!)
                 MetaMessageFieldType.ARRAY -> {
                     val genericParam = field.type.arguments.getOrNull(0)?.type
+
                     genericTypeClass = field.type.arguments.getOrNull(0)?.type?.classifier as KClass<*>?
                         ?: throw RuntimeException("Expected a generic type on type Array for meta object or message ${klass.qualifiedName}")
                     genericType = metaTypeOf(genericTypeClass)
                     genericTypeNullable = genericParam?.isMarkedNullable
+                    genericTypeHex = genericParam?.findAnnotation<Hex>() != null
+
                     val genericTypeDelimiter = genericTypeClass.findAnnotation<Delimiter>()?.delimiter ?: parentDelimiter
 
                     when (genericType) {
                         MetaMessageFieldType.CHAR   -> genericTypeClass = Character::class
+                        MetaMessageFieldType.LONG   -> genericTypeClass = Long::class
                         MetaMessageFieldType.INT    -> genericTypeClass = Integer::class
                         MetaMessageFieldType.FLOAT  -> genericTypeClass = Float::class
                         MetaMessageFieldType.OBJECT -> metaObject = resolveNesteadMetaObject(genericTypeClass, genericTypeDelimiter)
@@ -259,8 +273,8 @@ object DofusProtocol {
                 }
             }
 
-            msg?.fields?.add(MetaMessageField(javaField, type, nullable, genericType, genericTypeNullable, genericTypeClass, metaObject, fieldDelimiter, arraySize))
-                ?: obj?.fields?.add(MetaMessageField(javaField, type, nullable, genericType, genericTypeNullable, genericTypeClass, metaObject, fieldDelimiter, arraySize))
+            msg?.fields?.add(MetaMessageField(javaField, type, nullable, hex, genericType, genericTypeNullable, genericTypeClass, genericTypeHex, metaObject, fieldDelimiter, arraySize))
+                ?: obj?.fields?.add(MetaMessageField(javaField, type, nullable, hex, genericType, genericTypeNullable, genericTypeClass, genericTypeHex, metaObject, fieldDelimiter, arraySize))
         }
     }
 
@@ -272,12 +286,16 @@ object DofusProtocol {
     }
 
     private fun metaTypeOf(klass: KClass<*>): MetaMessageFieldType {
+        val i = Int
+
         return when (klass) {
             String::class       -> MetaMessageFieldType.STRING
             Int::class          -> MetaMessageFieldType.INT
+            Long::class         -> MetaMessageFieldType.LONG
             Float::class        -> MetaMessageFieldType.FLOAT
             Char::class         -> MetaMessageFieldType.CHAR
             IntArray::class     -> MetaMessageFieldType.ARRAY
+            LongArray::class    -> MetaMessageFieldType.ARRAY
             CharArray::class    -> MetaMessageFieldType.ARRAY
             FloatArray::class   -> MetaMessageFieldType.ARRAY
             else                -> {

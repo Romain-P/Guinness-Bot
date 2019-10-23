@@ -4,6 +4,7 @@ enum class MetaMessageFieldType {
     ARRAY,
     STRING,
     INT,
+    LONG,
     CHAR,
     FLOAT,
     OBJECT

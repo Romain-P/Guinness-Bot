@@ -55,10 +55,8 @@ object ProxyMessageHandler {
     fun onUpstreamReceive(ctx: ProxyClientContext, packet: String) {
         onReceive(packet, ctx, ctx.upstream(), ctx.downstream(), upstreamHandlers)
 
-        when (ctx.state) {
-            AWAIT_HELLO   -> ctx.state = AWAIT_VERSION
-            DISCONNECTED  -> return
-        }
+        if (ctx.state == AWAIT_HELLO)
+            ctx.state = AWAIT_VERSION
     }
 
     private fun onReceive(packet: String, ctx: ProxyClientContext, sourceStream: ProxyClientStream,

@@ -62,7 +62,11 @@ object ProxyMessageHandler {
     private fun onReceive(packet: String, ctx: ProxyClientContext, sourceStream: ProxyClientStream,
                           targetStream: ProxyClientStream?, handlersGroup: Map<MessageKClass, List<MessageHandler>>)
     {
-        val message = DofusProtocol.deserialize(packet)
+        val message = try {
+            DofusProtocol.deserialize(packet)
+        } catch(e: Exception) {
+            null
+        }
 
         Proxy.log(message ?: packet, source = sourceStream)
 
@@ -89,7 +93,7 @@ object ProxyMessageHandler {
             }
         }
         if (!discard && targetStream != null)
-            targetStream.write(message).flush()
+            targetStream.writeAndFlush(message)
 
         if (targetStream != null)
             ctx.upstream().flush()

@@ -27,7 +27,6 @@ object DofusProtocol {
     }
 
     fun deserialize(packet: String): Any? {
-        if (packet.startsWith("ASK")) return null /* TODO: remove it xD, it was just for test smtg */
         val meta = findMessage(packet) ?: return null
 
         val delim = meta.annot.delimiter

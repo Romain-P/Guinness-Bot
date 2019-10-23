@@ -7,6 +7,10 @@ import com.guiness.bot.protocol.DofusProtocol
 import com.guiness.bot.protocol.MetaMessage
 import com.guiness.bot.protocol.annotations.Message
 import com.guiness.bot.protocol.messages.custom.*
+import javafx.application.Application.launch
+import kotlinx.coroutines.*
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import kotlin.reflect.full.findAnnotation
 
 
@@ -19,6 +23,7 @@ fun loadSingletonsEagerly() {
     DofusProtocol
     ProxyMessageHandler
 }
+
 
 fun main(args: Array<String>) {
     loadSingletonsEagerly()

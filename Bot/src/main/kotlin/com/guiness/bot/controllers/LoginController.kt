@@ -10,6 +10,7 @@ import com.guiness.bot.protocol.messages.game.MountGivenXpMessage
 import com.guiness.bot.protocol.messages.game.SelectCharacterMessage
 import com.guiness.bot.protocol.messages.login.SelectServerMessage
 import com.guiness.bot.protocol.messages.login.ServersKnownMessage
+import com.kizitonwose.time.seconds
 
 @Controller
 class LoginController {

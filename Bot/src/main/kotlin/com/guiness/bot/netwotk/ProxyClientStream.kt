@@ -1,9 +1,12 @@
 package com.guiness.bot.netwotk
 
-import com.guiness.bot.log.logger
 import com.guiness.bot.netwotk.shared.PendingPacket
 import com.guiness.bot.protocol.DofusProtocol
+import com.kizitonwose.time.Interval
 import io.netty.channel.Channel
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import reactor.netty.Connection
 import java.util.*
 import java.net.InetSocketAddress
@@ -15,25 +18,53 @@ class ProxyClientStream(
     private val buffer: MutableList<PendingPacket> = ArrayList(),
     val uuid: String = channel.id().asLongText()
 ) {
-    fun write(message: Any, unwrapped: Boolean = false, forwarded: Boolean = false) : ProxyClientStream {
+    @Synchronized fun write(message: Any, unwrapped: Boolean = false, forwarded: Boolean = false) : ProxyClientStream {
         buffer.add(PendingPacket(message, unwrapped, forwarded))
         return this
     }
 
-    fun flush() {
-        for (pending in buffer) {
-            when (pending.unwrapped) {
-                true -> {
-                    channel.writeAndFlush(pending.packet)
-                    Proxy.log(pending.packet, target = this, forwarded = pending.forwarded)
-                }
-                false -> {
-                    val packet = DofusProtocol.serialize(pending.packet)!!
-                    channel.writeAndFlush(packet)
-                    Proxy.log(pending.packet, target = this, forwarded = pending.forwarded)
-                }
+    @Synchronized fun writeAndFlush(message: Any, unwrapped: Boolean = false, forwarded: Boolean = false) : ProxyClientStream {
+        when (unwrapped) {
+            true -> {
+                channel.writeAndFlush(message)
+                Proxy.log(message, target = this, forwarded = forwarded)
+            }
+            false -> {
+                val packet = DofusProtocol.serialize(message)!!
+                channel.writeAndFlush(packet)
+                Proxy.log(message, target = this, forwarded = forwarded)
             }
         }
+        return this
+    }
+
+    fun post(message: Any, delayed: Interval<*>, unwrapped: Boolean = false): ProxyClientStream {
+        delayedTransaction() {
+            later(message, delayed, unwrapped)
+        }
+        return this
+    }
+
+    fun delayedTransaction(transaction: suspend ProxyClientStream.() -> Unit) {
+        GlobalScope.run {
+            async {
+                transaction(this@ProxyClientStream)
+            }
+        }
+    }
+
+    /**
+     * Can be called only in a delayed transaction
+     */
+    @Synchronized suspend fun later(message: Any, delayed: Interval<*>? = null, unwrapped: Boolean = false) {
+        if (delayed != null)
+            delay(delayed.inMilliseconds.longValue)
+        writeAndFlush(message, unwrapped)
+    }
+
+    @Synchronized fun flush() {
+        for (pending in buffer)
+            writeAndFlush(pending.packet, pending.unwrapped, pending.forwarded)
         buffer.clear()
     }
 
@@ -42,10 +73,5 @@ class ProxyClientStream(
     fun close() {
         if (channel.isOpen)
             channel.close()
-    }
-
-    companion object {
-        val log by logger()
-        val proxyLog = log.appendName("proxy")
     }
 }

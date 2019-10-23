@@ -73,6 +73,7 @@ object Proxy {
         connection.onDispose {
             log("DOWNSTREAM", "DISCONNECTED", Log.LoggingLevel.BAD)
             ctx.upstreamMightBeNull()?.close()
+            ctx.state = ProxyClientState.DISCONNECTED
             clients.remove(ctx.uuid())
         }
     }

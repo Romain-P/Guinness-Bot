@@ -1,5 +1,7 @@
 package com.guiness.bot.netwotk
 
+import com.guiness.bot.entities.Bot
+import com.guiness.bot.log.Log
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
 import reactor.netty.Connection
@@ -8,14 +10,27 @@ class ProxyClientContext(
     private val downstream: ProxyClientStream,
     private var upstream: ProxyClientStream? = null
 ) {
-    fun uuid() = downstream.uuid
+    private var bot: Bot? = null
 
+    var state = ProxyClientState.AWAIT_HELLO
+        set(value) {
+            Proxy.log("state", value.name, Log.LoggingLevel.GOOD)
+            field = value
+        }
+
+    fun uuid() = downstream.uuid
     fun downstream() = downstream
-    fun upstream() : ProxyClientStream = upstream!!
+    fun upstream() = upstream!!
     fun upstreamMightBeNull() = upstream
+    fun bot() = bot!!
+    fun botMightBeNull() = bot
 
     fun attach(upstreamConnection: Connection) {
         this.upstream = ProxyClientStream("upstream", upstreamConnection)
+    }
+
+    fun attach(bot: Bot) {
+        this.bot = bot
     }
 
     companion object {

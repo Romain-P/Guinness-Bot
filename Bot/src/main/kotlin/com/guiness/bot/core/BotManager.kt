@@ -3,9 +3,10 @@ package com.guiness.bot.core
 import com.guiness.bot.entities.Account
 import com.guiness.bot.entities.Bot
 import com.guiness.bot.external.NativeAPI
+import com.guiness.bot.netwotk.ProxyClientContext
 
 object BotManager {
-    val instances: MutableMap<ProcessID, Bot> = HashMap()
+    val instances: MutableMap<AccountName, Bot> = HashMap()
 
     /**
      * Finds a dofus instance and auto-logs for each account given in the list
@@ -18,7 +19,8 @@ object BotManager {
      */
     fun connect(accounts: List<Account>): List<Account> {
         val remainingAccounts = ArrayList(accounts)
-        val processes = NativeAPI.allDofusProccesses().filter { instances[it] == null }
+        val processes = NativeAPI.allDofusProccesses()
+            .filter { proc -> instances.values.find { it.processId == proc } == null }
 
         if (processes.isEmpty()) return accounts
 
@@ -27,12 +29,22 @@ object BotManager {
         processes.take(limit).forEachIndexed { index, pid ->
             val account = accounts[index]
 
-            instances[pid] = Bot(pid, account, "", "")
+            instances[account.username] = Bot(pid, account)
             NativeAPI.injectDofus(pid)
-            //NativeAPI.login(pid, account.username, account.password)
+            NativeAPI.login(pid, account.username, account.password)
             remainingAccounts.remove(account)
         }
 
         return remainingAccounts
+    }
+
+    fun linkBotAndContext(context: ProxyClientContext, username: String? = null, ticket: String? = null) {
+        val bot = when(username) {
+            null -> instances.values.find { it.ticket?.equals(ticket) ?: false }
+            else -> instances[username]
+        } ?: return
+
+        bot.attach(context)
+        context.attach(bot)
     }
 }

@@ -1,6 +1,8 @@
 package com.guiness.bot.netwotk
 
+import com.guiness.bot.core.BotManager
 import com.guiness.bot.core.ChannelID
+import com.guiness.bot.core.ProfileManager
 import com.guiness.bot.log.Log
 import com.guiness.bot.log.logger
 import com.guiness.bot.protocol.DofusProtocol
@@ -34,6 +36,10 @@ object Proxy {
 
         config = TcpServer.create()
             .option(ChannelOption.SO_REUSEADDR, true)
+            .doOnBound {
+                /** TODO: remove when GUI done **/
+                BotManager.connect(ProfileManager.getDefaultProfile().accounts.values.toList())
+            }
             .doOnConnection {
                 addHandlers(it, downstream = true)
                 onConnect(it)
@@ -71,7 +77,7 @@ object Proxy {
         }
     }
 
-    fun connectToUpstream(ctx: ProxyClientContext, ip: String, port: Int, ticket: String? = null) {
+    fun connectToUpstream(ctx: ProxyClientContext, ip: String, port: Int) {
         TcpClient.create()
             .host(ip)
             .port(port)

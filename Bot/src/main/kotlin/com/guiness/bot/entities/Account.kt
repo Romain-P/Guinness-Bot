@@ -1,8 +1,16 @@
 package com.guiness.bot.entities
 
 import com.guiness.bot.core.AccountName
+import com.guiness.bot.core.CharacterName
 
-data class Account(
-    val username: AccountName,
-    val password: String
-)
+class Account(
+    var username: AccountName,
+    var password: String
+) {
+    val characters: MutableMap<CharacterName, Character> = HashMap()
+    var defaultCharacter: Character? = null
+
+    fun addCharacter(character: Character) {
+        characters[character.name] = character
+    }
+}

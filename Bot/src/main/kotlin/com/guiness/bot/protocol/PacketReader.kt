@@ -25,13 +25,15 @@ class PacketReader {
         this.packet = packet
     }
 
-    fun child(delim: Char): PacketReader {
+    fun child(delim: Char, shift: Int = 0): PacketReader {
         val newStack = stack.toMutableList()
         newStack.add(delim)
+        if (shift != 0)
+            sharedIndex[0] += shift
         return PacketReader(sharedIndex, packet, newStack)
     }
 
-    fun child(delim: String) = child(delim[0])
+    fun child(delim: String, shift: Int = 0) = child(delim[0], shift)
 
     fun readNext(): String? {
         if (consumed || packet.isEmpty() || sharedIndex[0] == packet.length)

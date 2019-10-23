@@ -27,6 +27,7 @@ object DofusProtocol {
     }
 
     fun deserialize(packet: String): Any? {
+        if (packet.startsWith("ASK")) return null /* TODO: remove it xD, it was just for test smtg */
         val meta = findMessage(packet) ?: return null
 
         val delim = meta.annot.delimiter
@@ -53,39 +54,40 @@ object DofusProtocol {
 
         for (i in fields.indices) {
             val field = fields[i]
-            val value = field.javaField.get(instance)
+            val value = field.javaField.get(instance) ?: ""
 
             if (i > 0)
                 packet.append(delim)
 
             when (field.type) {
-                MetaMessageFieldType.STRING -> packet.append(value)
-                MetaMessageFieldType.INT    -> packet.append(value as Int)
-                MetaMessageFieldType.FLOAT  -> packet.append(value as Float)
-                MetaMessageFieldType.CHAR   -> packet.append(value as Char)
                 MetaMessageFieldType.OBJECT -> serialize(packet, value, obj = field.metaObject)
                 MetaMessageFieldType.ARRAY  -> serializeArray(packet, field, value)
+                else                        -> packet.append(value)
             }
         }
     }
 
     private fun serializeArray(packet: StringBuilder, field: MetaMessageField, value: Any) {
-        val array = value as Array<Any>
+        val array = value as Array<Any?>
 
         for (i in array.indices) {
-            val elem = array[i]
+            val elem = array[i] ?: ""
 
             if (i > 0)
                 packet.append(field.delimiter)
 
             when(field.genericType) {
-                MetaMessageFieldType.STRING -> packet.append(elem)
-                MetaMessageFieldType.INT    -> packet.append(elem as Int)
-                MetaMessageFieldType.FLOAT  -> packet.append(elem as Float)
-                MetaMessageFieldType.CHAR   -> packet.append(elem as Char)
                 MetaMessageFieldType.OBJECT -> serialize(packet, elem, obj = field.metaObject)
                 MetaMessageFieldType.ARRAY  -> {/** should not happen, array of array not supported **/}
+                else                        -> packet.append(elem)
             }
+        }
+    }
+
+    inline fun <reified T> serializeElement(elem: T?): T? {
+        return when (elem) {
+            null -> null
+            else -> elem
         }
     }
 

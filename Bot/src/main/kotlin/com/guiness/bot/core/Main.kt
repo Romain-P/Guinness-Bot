@@ -23,7 +23,6 @@ fun loadSingletonsEagerly() {
 fun main(args: Array<String>) {
     loadSingletonsEagerly()
     NativeAPI.patchProxyPort(5555)
-    BotManager.connect(ProfileManager.getDefaultProfile().accounts.values.toList())
 
     Proxy.withHost("127.0.0.1", 5555)
         .withWorker(1, 4)

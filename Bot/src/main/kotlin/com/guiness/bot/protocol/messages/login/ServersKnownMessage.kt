@@ -6,12 +6,12 @@ import com.guiness.bot.protocol.annotations.StreamSource
 
 @Delimiter(",")
 data class KnownServer(
-    val serverId: Int,        /** ID of the realmd **/
-    val charactersCount: Int  /** number of characters on this server **/
+    var serverId: Int,
+    var charactersCount: Int
 )
 
 @Message(header = "AxK", source = StreamSource.UPSTREAM, delimiter = "|")
 data class ServersKnownMessage(
-    val subscriptionTime: Int,
-    val servers: Array<KnownServer>
+    var subscriptionTime: Int,
+    var servers: Array<KnownServer>
 )

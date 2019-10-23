@@ -1,8 +1,10 @@
 package com.guiness.bot.netwotk
 
+import com.guiness.bot.core.BotManager
 import com.guiness.bot.core.MessageKClass
 import com.guiness.bot.log.Log
 import com.guiness.bot.log.logger
+import com.guiness.bot.netwotk.ProxyClientState.*
 import com.guiness.bot.netwotk.shared.MessageHandler
 import com.guiness.bot.netwotk.shared.PipelineOperation
 import com.guiness.bot.netwotk.shared.StreamOperation
@@ -40,10 +42,23 @@ object ProxyMessageHandler {
 
     fun onDownstreamReceive(ctx: ProxyClientContext, packet: String) {
         onReceive(packet, ctx, ctx.downstream(), ctx.upstreamMightBeNull(), downStreamHandlers)
+
+        when (ctx.state) {
+            AWAIT_VERSION -> ctx.state = AWAIT_ACCOUNT
+            AWAIT_ACCOUNT -> {
+                ctx.state = SERVER_LIST
+                BotManager.linkBotAndContext(ctx, username = packet.split("\n")[0])
+            }
+        }
     }
 
     fun onUpstreamReceive(ctx: ProxyClientContext, packet: String) {
         onReceive(packet, ctx, ctx.upstream(), ctx.downstream(), upstreamHandlers)
+
+        when (ctx.state) {
+            AWAIT_HELLO   -> ctx.state = AWAIT_VERSION
+            DISCONNECTED  -> return
+        }
     }
 
     private fun onReceive(packet: String, ctx: ProxyClientContext, sourceStream: ProxyClientStream,
@@ -60,7 +75,7 @@ object ProxyMessageHandler {
 
         val handlers = handlersGroup[message::class]
         if (handlers == null || handlers.isEmpty()) {
-            targetStream?.write(message, true, true)?.flush()
+            targetStream?.write(message, forwarded = true)?.flush()
             return
         }
 

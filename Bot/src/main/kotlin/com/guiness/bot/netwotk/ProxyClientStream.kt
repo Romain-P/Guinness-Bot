@@ -23,7 +23,7 @@ class ProxyClientStream(
         return this
     }
 
-    @Synchronized fun writeAndFlush(message: Any, unwrapped: Boolean = false, forwarded: Boolean = false) : ProxyClientStream {
+    fun writeAndFlush(message: Any, unwrapped: Boolean = false, forwarded: Boolean = false) : ProxyClientStream {
         when (unwrapped) {
             true -> {
                 channel.writeAndFlush(message)
@@ -39,7 +39,7 @@ class ProxyClientStream(
     }
 
     fun post(message: Any, delayed: Interval<*>, unwrapped: Boolean = false): ProxyClientStream {
-        delayedTransaction() {
+        delayedTransaction {
             later(message, delayed, unwrapped)
         }
         return this

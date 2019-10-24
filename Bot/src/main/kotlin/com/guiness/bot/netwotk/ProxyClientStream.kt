@@ -56,7 +56,7 @@ class ProxyClientStream(
     /**
      * Can be called only in a delayed transaction
      */
-    @Synchronized suspend fun later(message: Any, delayed: Interval<*>? = null, unwrapped: Boolean = false) {
+    suspend fun later(message: Any, delayed: Interval<*>? = null, unwrapped: Boolean = false) {
         if (delayed != null)
             delay(delayed.inMilliseconds.longValue)
         writeAndFlush(message, unwrapped)

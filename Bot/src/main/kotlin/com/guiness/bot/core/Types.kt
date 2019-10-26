@@ -1,5 +1,6 @@
 package com.guiness.bot.core
 
+import java.lang.RuntimeException
 import kotlin.reflect.KClass
 
 typealias ProcessID = Int
@@ -27,4 +28,11 @@ fun Int.stringValue(hex: Boolean) = when (hex) {
 fun Long.stringValue(hex: Boolean) = when (hex) {
     true -> this.toString(radix = 16)
     false -> this.toString()
+}
+
+inline fun <reified V> Map<*, *>.value(key: String): V {
+    return when (val value = this[key]) {
+        is V    -> value
+        else    -> throw RuntimeException("Invalid cast")
+    }
 }

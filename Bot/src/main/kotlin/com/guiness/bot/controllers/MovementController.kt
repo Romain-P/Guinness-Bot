@@ -14,6 +14,7 @@ class MovementController {
     @FromUpstream(then = StreamOperation.FORWARD)
     fun onMapChanged(ctx: ProxyClientContext, msg: MapDataMessage) {
         val map = MapService.loadMap(msg.mapId, msg.date, msg.privateKey)
-
+        ctx.bot().session.map = map
+        /** TODO: events onMapChange etc **/
     }
 }

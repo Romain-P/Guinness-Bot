@@ -4,7 +4,7 @@
 #include <HadesMemory/MemoryMgr.hpp>
 #include <AsmJit/Assembler.h>
 #include <jni.h>
-#include "com_guiness_bot_external_NativeAPI.h"
+#include "com_guiness_bot_core_NativeAPI.h"
 #include <tlhelp32.h>
 #include <cstdio>
 #include <string>
@@ -14,6 +14,7 @@
 #include <fstream>
 #include "keysend.h"
 #include <regex>
+#include <Psapi.h>
 
 using HadesMem::MemoryMgr;
 using HadesMem::Injector;
@@ -26,7 +27,7 @@ std::wstring toWstring(JNIEnv *env, jstring str) {
 }
 
 JNIEXPORT jintArray JNICALL
-Java_com_guiness_bot_external_NativeAPI_availableProcesses
+Java_com_guiness_bot_core_NativeAPI_availableProcesses
 (JNIEnv *env, jobject, jstring processName)
 {
     std::vector<long> processIdList;
@@ -47,8 +48,29 @@ Java_com_guiness_bot_external_NativeAPI_availableProcesses
     return jniArray;
 }
 
+JNIEXPORT jstring JNICALL
+Java_com_guiness_bot_core_NativeAPI_dofusPath
+(JNIEnv *env, jobject, jint processId)
+{
+    HANDLE processHandle = nullptr;
+    TCHAR filename[MAX_PATH];
+
+    processHandle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, (DWORD) processId);
+    GetModuleFileNameEx(processHandle, nullptr, filename, MAX_PATH);
+    CloseHandle(processHandle);
+
+    std::wstring wstr(filename);
+    std::string str(wstr.begin(), wstr.end());
+
+    /** retrieves parent folder **/
+    size_t i = str.rfind('\\', str.length());
+    str = str.substr(0, i);
+    
+    return env->NewStringUTF(&str[0]);
+}
+
 JNIEXPORT void JNICALL
-Java_com_guiness_bot_external_NativeAPI_inject
+Java_com_guiness_bot_core_NativeAPI_inject
 (JNIEnv *env, jobject, jint processId, jstring dllPath)
 {
     auto id = (DWORD) processId;
@@ -59,7 +81,7 @@ Java_com_guiness_bot_external_NativeAPI_inject
 }
 
 JNIEXPORT void JNICALL
-Java_com_guiness_bot_external_NativeAPI_login
+Java_com_guiness_bot_core_NativeAPI_login
 (JNIEnv *env, jobject, jint processId, jstring username, jstring password)
 {
     auto current = findWindowHandle(GetCurrentProcessId());
@@ -96,14 +118,14 @@ Java_com_guiness_bot_external_NativeAPI_login
 }
 
 JNIEXPORT void JNICALL
-Java_com_guiness_bot_external_NativeAPI_reLogin
+Java_com_guiness_bot_core_NativeAPI_reLogin
 (JNIEnv *, jobject, jint, jstring username, jstring password)
 {
 
 }
 
 JNIEXPORT void JNICALL
-Java_com_guiness_bot_external_NativeAPI_patchProxyPort
+Java_com_guiness_bot_core_NativeAPI_patchProxyPort
 (JNIEnv *env, jobject, jint jPort, jstring patcherPath)
 {
     jboolean isCopy = 1;

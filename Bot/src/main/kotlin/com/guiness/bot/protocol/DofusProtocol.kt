@@ -165,6 +165,10 @@ object DofusProtocol {
         var msg: MetaMessage? = null
         var node: MessageNode? = null
 
+        if (packet.startsWith("AxK")) {
+            println("ok")
+        }
+
         for (char in packet) {
             node = (if (node == null) messages[char] else node.nodes[char]) ?: break
 

@@ -12,6 +12,6 @@ data class KnownServer(
 
 @Message(header = "AxK", source = StreamSource.UPSTREAM, delimiter = "|")
 data class ServersKnownMessage(
-    var subscriptionTime: Int,
+    var subscriptionTime: Long,
     var servers: Array<KnownServer>
 )

@@ -29,6 +29,8 @@ dependencies {
     implementation("io.projectreactor.netty:reactor-netty:0.9.0.RELEASE")
     implementation("com.github.kizitonwose:time:1.0.3")
     implementation("org.reflections:reflections:0.9.10")
+    implementation("no.tornado:tornadofx:1.7.19")
+    implementation(fileTree("lib"))
 }
 
 tasks.withType<KotlinCompile> {

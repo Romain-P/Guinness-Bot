@@ -22,6 +22,7 @@ import reactor.netty.NettyOutbound
 import reactor.netty.resources.LoopResources
 import reactor.netty.tcp.TcpClient
 import reactor.netty.tcp.TcpServer
+import kotlin.concurrent.thread
 
 
 object Proxy {
@@ -119,9 +120,15 @@ object Proxy {
         return this
     }
 
-    fun start() {
-        server = config.bindNow()
-        server.onDispose().block()
+    fun start(async: Boolean = false) {
+        if (async) {
+            thread(start = true) {
+                start()
+            }
+        } else {
+            server = config.bindNow()
+            server.onDispose().block()
+        }
     }
 
     fun log(msg: Any, source: ProxyClientStream? = null, target: ProxyClientStream? = null, forwarded: Boolean = false) {

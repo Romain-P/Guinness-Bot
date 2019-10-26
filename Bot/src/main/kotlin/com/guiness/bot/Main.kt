@@ -1,17 +1,9 @@
-package com.guiness.bot.core
+package com.guiness.bot
 
-import com.guiness.bot.external.NativeAPI
+import com.guiness.bot.core.NativeAPI
 import com.guiness.bot.netwotk.Proxy
 import com.guiness.bot.netwotk.ProxyMessageHandler
 import com.guiness.bot.protocol.DofusProtocol
-import com.guiness.bot.protocol.MetaMessage
-import com.guiness.bot.protocol.annotations.Message
-import com.guiness.bot.protocol.messages.custom.*
-import javafx.application.Application.launch
-import kotlinx.coroutines.*
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import kotlin.reflect.full.findAnnotation
 
 
 class Main
@@ -32,4 +24,6 @@ fun main(args: Array<String>) {
     Proxy.withHost("127.0.0.1", 5555)
         .withWorker(1, 4)
         .start()
+
+    //TODO: Application.launch(UserInterface::class.java)
 }

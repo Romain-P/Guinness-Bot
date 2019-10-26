@@ -2,7 +2,6 @@ package com.guiness.bot.core
 
 import com.guiness.bot.entities.Account
 import com.guiness.bot.entities.Bot
-import com.guiness.bot.external.NativeAPI
 import com.guiness.bot.netwotk.ProxyClientContext
 
 object BotManager {
@@ -33,6 +32,9 @@ object BotManager {
             NativeAPI.injectDofus(pid)
             NativeAPI.login(pid, account.username, account.password)
             remainingAccounts.remove(account)
+
+            if (!Config.isDofusPathInitialized())
+                Config.dofusPath = NativeAPI.dofusPath(pid)
         }
 
         return remainingAccounts

@@ -1,6 +1,5 @@
-package com.guiness.bot.external
+package com.guiness.bot.core
 
-import com.guiness.bot.core.ProcessID
 import java.io.File
 
 object NativeAPI {
@@ -17,6 +16,11 @@ object NativeAPI {
      * Returns a list of processes named by the given argument
      */
     private external fun availableProcesses(processName: String): IntArray
+
+    /**
+     * Returns the dofus path
+     */
+    external fun dofusPath(processId: Int): String
 
     /**
      * Injects a given process id with a given dll
@@ -38,11 +42,14 @@ object NativeAPI {
      */
     private external fun patchProxyPort(port: Int, patcherLibraryPath: String)
 
-    fun injectDofus(id: ProcessID) = inject(id, patcherLibraryName)
+    fun injectDofus(id: ProcessID) =
+        inject(id, patcherLibraryName)
 
-    fun allDofusProccesses() = availableProcesses(dofusExecutableName)
+    fun allDofusProccesses() =
+        availableProcesses(dofusExecutableName)
 
-    fun patchProxyPort(port: Int) = patchProxyPort(port, patcherLibraryName)
+    fun patchProxyPort(port: Int) =
+        patchProxyPort(port, patcherLibraryName)
 
     fun nativeLibraryPath(dllName: String) = System.getProperty("user.dir") + File.separator +
             nativeDirectory + File.separator + dllName + "-x" + System.getProperty("sun.arch.data.model") + ".dll"

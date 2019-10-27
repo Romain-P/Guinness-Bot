@@ -6,7 +6,6 @@ plugins {
 
 allprojects {
     apply(plugin = "kotlin")
-
     group = "com.guinness.bot"
     version = "1.0-SNAPSHOT"
 

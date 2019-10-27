@@ -8,6 +8,7 @@ typealias AccountName = String
 typealias CharacterName = String
 typealias ProfileAlias = String
 typealias ChannelID = String
+typealias ScriptName = String
 typealias MessageKClass = KClass<*>
 
 fun String.longValue(hex: Boolean) = when (hex) {

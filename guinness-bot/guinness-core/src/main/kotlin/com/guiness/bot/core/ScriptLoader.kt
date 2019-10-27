@@ -12,13 +12,13 @@ import kotlin.reflect.KClass
 
 object ScriptLoader {
     private val engine: ScriptEngine
-    val loadedScripts: List<KClass<AIScript>>
+    val loadedScripts: Map<ScriptName, KClass<AIScript>>
 
     init {
         setIdeaIoUseFallback()
         val classLoader = Thread.currentThread().contextClassLoader
         engine = ScriptEngineManager(classLoader).getEngineByExtension("kts")
-        loadedScripts = loadScripts()
+        loadedScripts = loadScripts().associateBy ({it.simpleName!! }, {it})
     }
 
     private fun loadScripts(): List<KClass<AIScript>> {

@@ -3,10 +3,6 @@ package com.guiness.bot.core
 import com.guiness.bot.entities.Account
 import com.guiness.bot.entities.Bot
 import com.guiness.bot.netwotk.ProxyClientContext
-import com.guinness.api.AIScript
-import java.lang.RuntimeException
-import kotlin.reflect.KClass
-import kotlin.reflect.full.primaryConstructor
 
 object BotManager {
     val instances: MutableMap<AccountName, Bot> = HashMap()
@@ -34,7 +30,6 @@ object BotManager {
 
             val bot = Bot(pid, account)
             instances[account.username] = bot
-            initBotScripts(bot)
 
             NativeAPI.injectDofus(pid)
             NativeAPI.login(pid, account.username, account.password)
@@ -45,14 +40,6 @@ object BotManager {
         }
 
         return remainingAccounts
-    }
-
-    private fun initBotScripts(bot: Bot) {
-        val scripts = ScriptLoader.loadedScripts.map {
-            it.primaryConstructor?.call(bot) ?: throw RuntimeException("Script ${it.qualifiedName} has invalid constructor")
-        }
-
-        bot.updateScripts(scripts)
     }
 
     fun linkBotAndContext(context: ProxyClientContext, username: String? = null, ticket: String? = null) {

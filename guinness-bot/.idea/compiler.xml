@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="guinness-bot.guinness-api.main" target="11" />
+      <module name="guinness-bot.guinness-api.test" target="11" />
+      <module name="guinness-bot.guinness-core.main" target="11" />
+      <module name="guinness-bot.guinness-core.test" target="11" />
+      <module name="guinness-bot.main" target="11" />
+      <module name="guinness-bot.test" target="11" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

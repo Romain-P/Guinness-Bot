@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/guinness-bot.iml" filepath="$PROJECT_DIR$/.idea/guinness-bot.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/guinness-api/guinness-bot.guinness-api.iml" filepath="$PROJECT_DIR$/.idea/modules/guinness-api/guinness-bot.guinness-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/guinness-api/guinness-bot.guinness-api.main.iml" filepath="$PROJECT_DIR$/.idea/modules/guinness-api/guinness-bot.guinness-api.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/guinness-api/guinness-bot.guinness-api.test.iml" filepath="$PROJECT_DIR$/.idea/modules/guinness-api/guinness-bot.guinness-api.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/guinness-core/guinness-bot.guinness-core.iml" filepath="$PROJECT_DIR$/.idea/modules/guinness-core/guinness-bot.guinness-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/guinness-core/guinness-bot.guinness-core.main.iml" filepath="$PROJECT_DIR$/.idea/modules/guinness-core/guinness-bot.guinness-core.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/guinness-core/guinness-bot.guinness-core.test.iml" filepath="$PROJECT_DIR$/.idea/modules/guinness-core/guinness-bot.guinness-core.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/guinness-bot.main.iml" filepath="$PROJECT_DIR$/.idea/modules/guinness-bot.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/guinness-bot.test.iml" filepath="$PROJECT_DIR$/.idea/modules/guinness-bot.test.iml" />
+    </modules>
+  </component>
+</project>

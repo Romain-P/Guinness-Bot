@@ -1,4 +1,4 @@
-package com.guiness.bot.entities
+package com.guiness.bot.game
 
 import com.guinness.api.entities.ICell
 import com.guinness.api.entities.IMap

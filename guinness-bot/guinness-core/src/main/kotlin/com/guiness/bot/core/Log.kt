@@ -1,4 +1,4 @@
-package com.guiness.bot.log
+package com.guiness.bot.core
 
 import java.io.PrintStream
 import java.io.PrintWriter
@@ -126,12 +126,14 @@ object Log {
 
         override fun format(msg: String, vararg args: Any) = String.format(msg, *args)
 
-        override fun newLogger(name: String, context: Map<String, Any>) = StdLogger(out, name, context)
+        override fun newLogger(name: String, context: Map<String, Any>) =
+            StdLogger(out, name, context)
     }
 
     enum class StdLoggerType { Stdout, Stderr, Syslog }
 
-    class StdLoggerFactory(val loggerType: StdLoggerType = StdLoggerType.Stdout) : LoggerFactory {
+    class StdLoggerFactory(val loggerType: StdLoggerType = StdLoggerType.Stdout) :
+        LoggerFactory {
         val printStream: PrintStream = run {
             when (loggerType) {
                 StdLoggerType.Stdout -> System.out
@@ -140,7 +142,8 @@ object Log {
             }
         }
 
-        override fun create(name: String, context: Map<String, Any>) = StdLogger(printStream, name, context)
+        override fun create(name: String, context: Map<String, Any>) =
+            StdLogger(printStream, name, context)
     }
 
     interface LoggerFactory {

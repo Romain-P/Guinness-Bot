@@ -1,9 +1,8 @@
 package com.guiness.bot.services
 
 import com.guiness.bot.core.Config
-import com.guiness.bot.services.util.SwfExtractor
+import com.guiness.bot.core.SwfExtractor
 import java.io.BufferedReader
-import java.io.IOException
 import java.net.URL
 import java.io.FileInputStream
 import java.io.InputStreamReader

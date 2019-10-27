@@ -1,4 +1,4 @@
-package com.guiness.bot.services.util
+package com.guiness.bot.core
 
 import flash.swf.Action
 import flash.swf.ActionHandler

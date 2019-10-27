@@ -2,8 +2,7 @@ package com.guiness.bot.netwotk
 
 import com.guiness.bot.core.BotManager
 import com.guiness.bot.core.MessageKClass
-import com.guiness.bot.log.Log
-import com.guiness.bot.log.logger
+import com.guiness.bot.core.logger
 import com.guiness.bot.netwotk.ProxyClientState.*
 import com.guiness.bot.netwotk.shared.MessageHandler
 import com.guiness.bot.netwotk.shared.PipelineOperation

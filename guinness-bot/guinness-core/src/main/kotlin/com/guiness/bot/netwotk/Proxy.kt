@@ -3,8 +3,8 @@ package com.guiness.bot.netwotk
 import com.guiness.bot.core.BotManager
 import com.guiness.bot.core.ChannelID
 import com.guiness.bot.core.ProfileManager
-import com.guiness.bot.log.Log
-import com.guiness.bot.log.logger
+import com.guiness.bot.core.Log
+import com.guiness.bot.core.logger
 import com.guiness.bot.protocol.DofusProtocol
 import com.guiness.bot.protocol.utf8
 import io.netty.channel.ChannelOption

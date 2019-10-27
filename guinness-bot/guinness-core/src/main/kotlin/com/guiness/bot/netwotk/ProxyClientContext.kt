@@ -1,9 +1,7 @@
 package com.guiness.bot.netwotk
 
 import com.guiness.bot.entities.Bot
-import com.guiness.bot.log.Log
-import io.netty.channel.Channel
-import io.netty.channel.ChannelFuture
+import com.guiness.bot.core.Log
 import reactor.netty.Connection
 
 class ProxyClientContext(

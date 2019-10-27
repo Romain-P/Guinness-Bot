@@ -1,0 +1,7 @@
+﻿  Interceptor.cpp
+  Library.cpp
+  Generating Code...
+  libMinHook-x86-v141-md.lib(hook.obj) : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
+  Generating code
+  Finished generating code
+  winsock-patcher.vcxproj -> C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\install\Release\winsock-patcher.dll

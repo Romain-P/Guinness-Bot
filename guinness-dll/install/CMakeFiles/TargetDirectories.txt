@@ -1,0 +1,3 @@
+C:/Users/romain/Desktop/Guinness-Bot/winsock-patcher/install/CMakeFiles/winsock-patcher.dir
+C:/Users/romain/Desktop/Guinness-Bot/winsock-patcher/install/CMakeFiles/ALL_BUILD.dir
+C:/Users/romain/Desktop/Guinness-Bot/winsock-patcher/install/CMakeFiles/ZERO_CHECK.dir

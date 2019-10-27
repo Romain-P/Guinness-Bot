@@ -1,0 +1,10 @@
+﻿  Checking Build System
+  CMake is re-running because C:/Users/romain/Desktop/Guinness-Bot/winsock-patcher/install/CMakeFiles/generate.stamp is out-of-date.
+    the file 'C:/Users/romain/Desktop/Guinness-Bot/winsock-patcher/CMakeLists.txt'
+    is newer than 'C:/Users/romain/Desktop/Guinness-Bot/winsock-patcher/install/CMakeFiles/generate.stamp.depend'
+    result='-1'
+  winsock-patcher will be compiled for 32bits processes
+  winsock-patcher is ready to compile, open the .svn solution located in /build
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/Users/romain/Desktop/Guinness-Bot/winsock-patcher/install

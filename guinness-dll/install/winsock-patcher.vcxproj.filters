@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\src\Library.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\src\Interceptor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\src\ModuleHideHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\src\Library.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\src\Interceptor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\src\Hook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\src\ModuleHideHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\romain\Desktop\Guinness-Bot\winsock-patcher\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{3F41DEAD-1D27-3E2E-A730-B3B68A6DD02F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4ECBE0C8-47BA-3C7B-A6C0-3DCCA70A625B}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

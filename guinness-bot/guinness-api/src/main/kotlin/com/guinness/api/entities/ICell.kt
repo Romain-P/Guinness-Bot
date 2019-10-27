@@ -12,7 +12,7 @@ interface ICell {
     val groundSlope: Int
     val layerGroundFlip: Boolean
     val layerObject1Num: Int
-    val layerObject1Rot: Int
+    val layerObject1Rotate: Int
     val layerObject1Flip: Boolean
     val layerObject2Flip: Boolean
     val layerObject2Interactive: Boolean

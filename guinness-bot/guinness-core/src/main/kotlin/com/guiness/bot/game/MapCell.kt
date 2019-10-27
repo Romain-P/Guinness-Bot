@@ -15,7 +15,7 @@ class MapCell(
     override val groundSlope: Int,
     override val layerGroundFlip: Boolean,
     override val layerObject1Num: Int,
-    override val layerObject1Rot: Int,
+    override val layerObject1Rotate: Int,
     override val layerObject1Flip: Boolean,
     override val layerObject2Flip: Boolean,
     override val layerObject2Interactive: Boolean,

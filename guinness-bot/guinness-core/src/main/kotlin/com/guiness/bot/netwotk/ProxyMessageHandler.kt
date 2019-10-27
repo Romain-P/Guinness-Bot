@@ -62,7 +62,7 @@ object ProxyMessageHandler {
                           targetStream: ProxyClientStream?, handlersGroup: Map<MessageKClass, List<MessageHandler>>)
     {
         val message = try {
-            DofusProtocol.deserialize(packet)
+            DofusProtocol.deserialize(packet, sourceStream.streamType)
         } catch(e: Exception) {
             null
         }

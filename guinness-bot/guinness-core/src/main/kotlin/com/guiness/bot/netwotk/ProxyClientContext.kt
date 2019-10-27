@@ -2,6 +2,7 @@ package com.guiness.bot.netwotk
 
 import com.guiness.bot.entities.Bot
 import com.guiness.bot.core.Log
+import com.guiness.bot.protocol.annotations.StreamSource
 import reactor.netty.Connection
 
 class ProxyClientContext(
@@ -24,7 +25,7 @@ class ProxyClientContext(
     fun botMightBeNull() = bot
 
     fun attach(upstreamConnection: Connection) {
-        this.upstream = ProxyClientStream("upstream", upstreamConnection)
+        this.upstream = ProxyClientStream(StreamSource.UPSTREAM, upstreamConnection)
     }
 
     fun attach(bot: Bot) {
@@ -32,6 +33,6 @@ class ProxyClientContext(
     }
 
     companion object {
-        fun of(label: String, connection: Connection) = ProxyClientContext(ProxyClientStream(label, connection))
+        fun of(streamType: StreamSource, connection: Connection) = ProxyClientContext(ProxyClientStream(streamType, connection))
     }
 }

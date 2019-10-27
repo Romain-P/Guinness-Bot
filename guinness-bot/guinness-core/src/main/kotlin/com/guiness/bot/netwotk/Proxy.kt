@@ -6,6 +6,7 @@ import com.guiness.bot.core.ProfileManager
 import com.guiness.bot.core.Log
 import com.guiness.bot.core.logger
 import com.guiness.bot.protocol.DofusProtocol
+import com.guiness.bot.protocol.annotations.StreamSource
 import com.guiness.bot.protocol.utf8
 import io.netty.channel.ChannelOption
 import io.netty.handler.codec.DelimiterBasedFrameDecoder
@@ -67,7 +68,7 @@ object Proxy {
     }
 
     private fun onConnect(connection: Connection) {
-        val ctx = ProxyClientContext.of("downstream", connection)
+        val ctx = ProxyClientContext.of(StreamSource.DOWNSTREAM, connection)
         clients[connection.channel().id().asLongText()] = ctx
         log("DOWNSTREAM", "CONNECTED", Log.LoggingLevel.GOOD)
 

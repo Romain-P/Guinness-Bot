@@ -3,10 +3,7 @@ package com.guiness.bot.protocol
 import com.guiness.bot.core.intValue
 import com.guiness.bot.core.longValue
 import com.guiness.bot.core.stringValue
-import com.guiness.bot.protocol.annotations.Message
-import com.guiness.bot.protocol.annotations.Delimiter
-import com.guiness.bot.protocol.annotations.Hex
-import com.guiness.bot.protocol.annotations.Size
+import com.guiness.bot.protocol.annotations.*
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import java.lang.RuntimeException
@@ -21,17 +18,19 @@ object DofusProtocol {
     val CLIENT_DELIMITER: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0xa, 0x0))
     val SERVER_DELIMITER: ByteBuf = Unpooled.wrappedBuffer(byteArrayOf(0x0))
 
-    private val messages: Map<Char, MessageNode>
+    private val fromUpstreamMessages: Map<Char, MessageNode>
+    private val fromDownstreamMessages: Map<Char, MessageNode>
 
     init {
         val reflections = Reflections("com.guiness.bot.protocol.messages")
         val classes = reflections.getTypesAnnotatedWith(Message::class.java).map { it.kotlin }
 
-        messages = buildMessageTree(classes)
+        fromUpstreamMessages = buildMessageTree(classes, StreamSource.UPSTREAM)
+        fromDownstreamMessages = buildMessageTree(classes, StreamSource.DOWNSTREAM)
     }
 
-    fun deserialize(packet: String): Any? {
-        val meta = findMessage(packet) ?: return null
+    fun deserialize(packet: String, source: StreamSource): Any? {
+        val meta = findMessage(packet, source) ?: return null
 
         val delim = meta.annot.delimiter
         val data = packet.substring(meta.annot.header.length)
@@ -43,7 +42,7 @@ object DofusProtocol {
     fun serialize(message: Any): String? {
         val annot: Message = message::class.findAnnotation() ?: return null
         val header = annot.header
-        val meta = findMessage(header) ?: return null
+        val meta = findMessage(header, annot.source) ?: return null
         val packet = StringBuilder(header)
 
         serialize(packet, message, msg = meta)
@@ -161,13 +160,14 @@ object DofusProtocol {
         return cast
     }
 
-    private fun findMessage(packet: String): MetaMessage? {
+    private fun findMessage(packet: String, source: StreamSource): MetaMessage? {
         var msg: MetaMessage? = null
         var node: MessageNode? = null
 
-        if (packet.startsWith("AxK")) {
-            println("ok")
-        }
+        val messages = if (source == StreamSource.DOWNSTREAM)
+            fromDownstreamMessages
+        else
+            fromUpstreamMessages
 
         for (char in packet) {
             node = (if (node == null) messages[char] else node.nodes[char]) ?: break
@@ -179,12 +179,14 @@ object DofusProtocol {
         return msg
     }
 
-    private fun buildMessageTree(classes: List<KClass<*>>): Map<Char, MessageNode> {
+    private fun buildMessageTree(classes: List<KClass<*>>, source: StreamSource): Map<Char, MessageNode> {
         val messages = HashMap<Char, MessageNode>()
 
         for (klass in classes) {
             val annot: Message = klass.findAnnotation()
                 ?: throw RuntimeException("Not annotation found on packet ${klass.qualifiedName}")
+            if (annot.source != source && annot.source != StreamSource.ANYSTREAM) continue
+
             var node: MessageNode? = null
 
             for (i in annot.header.indices) {

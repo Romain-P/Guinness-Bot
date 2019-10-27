@@ -18,7 +18,7 @@ object ScriptLoader {
         setIdeaIoUseFallback()
         val classLoader = Thread.currentThread().contextClassLoader
         engine = ScriptEngineManager(classLoader).getEngineByExtension("kts")
-        loadedScripts = loadScripts().associateBy ({it.simpleName!! }, {it})
+        loadedScripts = loadScripts().associateBy ({ it.simpleName!! }, { it })
     }
 
     private fun loadScripts(): List<KClass<AIScript>> {

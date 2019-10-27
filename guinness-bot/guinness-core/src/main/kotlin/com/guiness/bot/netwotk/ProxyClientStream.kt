@@ -2,6 +2,7 @@ package com.guiness.bot.netwotk
 
 import com.guiness.bot.netwotk.shared.PendingPacket
 import com.guiness.bot.protocol.DofusProtocol
+import com.guiness.bot.protocol.annotations.StreamSource
 import com.kizitonwose.time.Interval
 import io.netty.channel.Channel
 import kotlinx.coroutines.GlobalScope
@@ -12,12 +13,14 @@ import java.util.*
 import java.net.InetSocketAddress
 
 class ProxyClientStream(
-    val label: String,
-    private val connection: Connection,
-    private val channel: Channel = connection.channel(),
-    private val buffer: MutableList<PendingPacket> = ArrayList(),
-    val uuid: String = channel.id().asLongText()
+    val streamType: StreamSource,
+    private val connection: Connection
 ) {
+    private val channel: Channel = connection.channel()
+    private val buffer: MutableList<PendingPacket> = ArrayList()
+    val uuid: String = channel.id().asLongText()
+    val label: String = streamType.name
+
     @Synchronized fun write(message: Any, unwrapped: Boolean = false, forwarded: Boolean = false) : ProxyClientStream {
         buffer.add(PendingPacket(message, unwrapped, forwarded))
         return this

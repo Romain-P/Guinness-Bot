@@ -5,9 +5,9 @@ import com.guiness.bot.netwotk.ProxyClientState
 import com.guiness.bot.netwotk.shared.StreamOperation
 import com.guiness.bot.netwotk.shared.annotations.Controller
 import com.guiness.bot.netwotk.shared.annotations.FromUpstream
-import com.guiness.bot.protocol.messages.game.CharacterListMessage
+import com.guiness.bot.protocol.messages.game.lobby.CharacterListMessage
 import com.guiness.bot.protocol.messages.game.MountGivenXpMessage
-import com.guiness.bot.protocol.messages.game.SelectCharacterMessage
+import com.guiness.bot.protocol.messages.game.lobby.SelectCharacterMessage
 import com.guiness.bot.protocol.messages.login.SelectServerMessage
 import com.guiness.bot.protocol.messages.login.ServersKnownMessage
 

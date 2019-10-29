@@ -59,9 +59,6 @@ object DofusProtocol {
             val value = field.javaField.get(instance)
             val isHexadecimal = field.hex
 
-            if (i > 0)
-                packet.append(delim)
-
             when (field.type) {
                 MetaMessageFieldType.INT    -> packet.append((value as Int?)?.stringValue(isHexadecimal) ?: "")
                 MetaMessageFieldType.LONG   -> packet.append((value as Long?)?.stringValue(isHexadecimal) ?: "")
@@ -69,6 +66,9 @@ object DofusProtocol {
                 MetaMessageFieldType.ARRAY  -> serializeArray(packet, field, value ?: "")
                 else                        -> packet.append(value ?: "")
             }
+
+            if (field.bytesNumber == null && i < fields.lastIndex)
+                packet.append(delim)
         }
     }
 
@@ -104,7 +104,7 @@ object DofusProtocol {
             val serializedParam = when(param.type) {
                 MetaMessageFieldType.ARRAY -> null
                 MetaMessageFieldType.OBJECT -> null
-                else -> reader.readNext()
+                else -> reader.readNext(param.bytesNumber ?: 0)
                     ?: when (param.genericTypeNullable) {
                         false -> "01234567890"
                         else -> null
@@ -241,6 +241,7 @@ object DofusProtocol {
             var metaObject: MetaObject? = null
             var fieldDelimiter: String? = null
             val arraySize: Int? = field.findAnnotation<Size>()?.size
+            val bytesNumber: Int? = field.findAnnotation<Bytes>()?.bytesNumber
 
             /** we do this call now so don't have to do it later for each packet received **/
             val javaField = klass.javaObjectType.getDeclaredField(field.name!!)
@@ -279,8 +280,8 @@ object DofusProtocol {
                 }
             }
 
-            msg?.fields?.add(MetaMessageField(javaField, type, nullable, hex, genericType, genericTypeNullable, genericTypeClass, genericTypeHex, metaObject, fieldDelimiter, arraySize))
-                ?: obj?.fields?.add(MetaMessageField(javaField, type, nullable, hex, genericType, genericTypeNullable, genericTypeClass, genericTypeHex, metaObject, fieldDelimiter, arraySize))
+            msg?.fields?.add(MetaMessageField(javaField, type, nullable, hex, genericType, genericTypeNullable, genericTypeClass, genericTypeHex, metaObject, fieldDelimiter, arraySize, bytesNumber))
+                ?: obj?.fields?.add(MetaMessageField(javaField, type, nullable, hex, genericType, genericTypeNullable, genericTypeClass, genericTypeHex, metaObject, fieldDelimiter, arraySize, bytesNumber))
         }
     }
 

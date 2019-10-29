@@ -14,5 +14,6 @@ data class MetaMessageField(
     val genericTypeHex: Boolean?,
     val metaObject: MetaObject?, /* present if type or genericType == OBJECT */
     val delimiter: String?,
-    val arraySize: Int?
+    val arraySize: Int?,
+    val bytesNumber: Int?
 )

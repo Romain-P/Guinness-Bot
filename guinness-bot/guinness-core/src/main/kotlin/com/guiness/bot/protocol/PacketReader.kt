@@ -12,11 +12,13 @@ class PacketReader {
         this.stack = listOf(delim)
         this.packet = packet
 
-        if (packet.isNotEmpty() && packet[0] == delim)
-            ++sharedIndex[0]
+        /** Old quick fix, should be un-necessary now
+         *
+         *   if (packet.isNotEmpty() && packet[0] == delim)
+         *       ++sharedIndex[0]
+        **/
     }
 
-    /** TODO: does exist a delimiter with more than 1 char? not sure **/
     constructor(packet: String, delim: String): this(packet, delim[0])
 
     private constructor(sharedIndex: Array<Int>, packet: String, stack: List<Char>) {
@@ -35,24 +37,25 @@ class PacketReader {
 
     fun child(delim: String, shift: Int = 0) = child(delim[0], shift)
 
-    fun readNext(): String? {
+    fun readNext(readExactly: Int = 0): String? {
         if (consumed || packet.isEmpty() || sharedIndex[0] == packet.length)
             return null
 
         var action = ReadAction.CONTINUE
         val startIndex = sharedIndex[0]
 
-        while (action == ReadAction.CONTINUE) {
-            action = delimiterReached()
-            ++sharedIndex[0]
-        }
+        if (readExactly == 0) {
+            while (action == ReadAction.CONTINUE) {
+                action = delimiterReached()
+                ++sharedIndex[0]
+            }
+        } else
+            sharedIndex[0] += readExactly
 
-        val value = when (startIndex) {
+        return when (startIndex) {
             sharedIndex[0] - 1  -> null
             else                -> packet.substring(startIndex, sharedIndex[0] - 1)
         }
-
-        return value
     }
 
     fun hasNext(): Boolean {

@@ -1,4 +1,4 @@
-package com.guiness.bot.protocol.messages.game
+package com.guiness.bot.protocol.messages.game.lobby
 
 import com.guiness.bot.protocol.annotations.*
 import com.guiness.bot.protocol.entities.login.AvailableCharacter

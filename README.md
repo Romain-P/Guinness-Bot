@@ -1,6 +1,8 @@
 # Guinness Bot
 ## Introduction
 A dofus retro MITM event-driven bot written in `C++` and `Kotlin JVM`.  
+Client modifications are not needed, the redirection is done by an injected module.  
+
 The choice to make a `MITM` is justified by several reasons: 
  * Take advantages of a clean client (without modifications)
  * Easy to understand the network protocol
@@ -22,9 +24,9 @@ Well this diagram could have been reviewed, but it should explains basics
 ![diagram](https://i.imgur.com/7TtCisP.png)
 
 # Features
+## Network logging
 
 Available in console  
-## Network logging
 ```
 Sun, 20 Oct 2019 15:43:32 GMT -- Proxy/tcp [.]  [DOWNSTREAM] [SENT]      ---> [PROXY]        : Af
 Sun, 20 Oct 2019 15:43:32 GMT -- Proxy/tcp [.]  [PROXY]      [FORWARDED] ---> [UPSTREAM]     : Af
@@ -205,6 +207,9 @@ ctx.upstream().delayedTransaction {
 
 I tried to get involved in the general design of the bot. I wanted to make possible the implementation of new game features without polluting the code of the core, and also make possible to edit some behaviour without recompiling the bot. --on the fly  
 So it is possible to write `kotlin-script` using the [bot-api](https://github.com/Romain-P/Guinness-Bot/tree/master/guinness-bot/guinness-api/src/main/kotlin/com/guinness/api)
+
+Scripts are loaded when the application starts and must be located where the executable of the bot is, in the folder `scripts`.  
+Here is the folder: [click-me](https://github.com/Romain-P/Guinness-Bot/tree/master/guinness-bot/scripts)
 
 A script looks like the following code:
 ```kotlin

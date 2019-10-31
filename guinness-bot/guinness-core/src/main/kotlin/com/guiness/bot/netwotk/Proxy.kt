@@ -1,10 +1,6 @@
 package com.guiness.bot.netwotk
 
-import com.guiness.bot.core.BotManager
-import com.guiness.bot.core.ChannelID
-import com.guiness.bot.core.ProfileManager
-import com.guiness.bot.core.Log
-import com.guiness.bot.core.logger
+import com.guiness.bot.core.*
 import com.guiness.bot.protocol.DofusProtocol
 import com.guiness.bot.protocol.annotations.StreamSource
 import com.guiness.bot.protocol.utf8
@@ -40,6 +36,7 @@ object Proxy {
             .option(ChannelOption.SO_REUSEADDR, true)
             .doOnBound {
                 /** TODO: remove when GUI done **/
+                NativeAPI.patchProxyPort(it.port())
                 BotManager.connect(ProfileManager.getDefaultProfile().accounts.values.toList())
             }
             .doOnConnection {

@@ -24,9 +24,9 @@ fun loadSingletonsEagerly() {
 
 fun main(args: Array<String>) {
     loadSingletonsEagerly()
-    NativeAPI.patchProxyPort(5555)
 
-    Proxy.withHost("127.0.0.1", 5555)
+    /* local tcp server bound on random available port */
+    Proxy.withHost("127.0.0.1")
         .withWorker(1, 4)
         .start()
 

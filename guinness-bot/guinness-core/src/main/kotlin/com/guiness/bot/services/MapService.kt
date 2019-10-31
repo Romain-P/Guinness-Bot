@@ -46,6 +46,9 @@ object MapService {
         return map
     }
 
+    fun compressCellId(cellId: Int) = HASH[cellId and 0xFC0 shr 6].toString() + HASH[cellId and 0x3F]
+    fun uncompressCellId(cellId: String) = (indexOfHash(cellId[0]) shl 6) + indexOfHash(cellId[1])
+
     private fun decryptMapData(data: String, privateKey: String): String {
         val preparedKey = prepareKey(privateKey)
         val checksum = checksum(preparedKey).toString().intValue(true) * 2

@@ -8,5 +8,5 @@ data class GameAction(
     var unknown: Long?,
     var actionId: Int,
     var entityGuid: Long, /* character guid or mob group guid */
-    var data: Array<String>
+    var data: String
 )

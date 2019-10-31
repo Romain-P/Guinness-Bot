@@ -10,6 +10,8 @@ The choice to make a `MITM` is justified by several reasons:
     - Like the integrity of the client verified by the launcher
     - As well as packets hidden in the client.
   * The fact that dofus is launched with electron allows ankama to make futher integrity checks than before
+  
+At this moment, the bot works fully on `Windows XP` up to `Windows 10`. 
 
 ## Global Overview 
 |                |Stack                        |Used for                         |
@@ -256,4 +258,49 @@ class MovementController {
     }
 }
 ```
+  
+## DEMO
 
+Auto-login without any manipulation.  
+Account and password must be written in the source code for now. There is no GUI yet.  
+You can edit auto-login information [HERE](https://github.com/Romain-P/Guinness-Bot/blob/master/guinness-bot/guinness-core/src/main/kotlin/com/guiness/bot/core/ProfileManager.kt#L10)
+
+![demo](https://i.imgur.com/Q6vOjaB.gif)
+
+## Incoming features - experimental
+
+I'm currently working on the movement. Since we can take profits of the client, here's how I'm doing:
+ * Redirecting dns of ankama (for intercept http requests)
+ * Catch and infect a swf with a script
+ * Compute path from the client on the request of the MITM
+ 
+Current injected code:
+```actionscript
+   if(_global.API.network._oDataProcessor.aks.Basics.$_onDate == undefined)
+   {
+      _global.API.network._oDataProcessor.aks.Basics.$_onDate = _global.API.network._oDataProcessor.aks.Basics.onDate;
+   }
+   _global.API.network._oDataProcessor.aks.Basics.onDate = function(data)
+   {
+      if(data.charAt(0) != "#")
+      {
+         _global.API.network._oDataProcessor.aks.Basics.$_onDate(data);
+      }
+      else
+      {
+         var _loc3_ = data.substr(1);
+         _global.API.datacenter.Game.setInteractionType("move");
+         _global.API.gfx.onCellRelease({num:Number(_loc3_)});
+         _global.API.kernel.showMessage(_loc3_,_loc4_,"ERROR_BOX");
+      }
+   };
+```
+It simply hook `onDate` handler (`BD` packet) and changes the behaviour of the handler. If the packet starts with a `#`, a custom code is executed. In this case, I simply call `onCellRelease` which is going to compute the path for the targetted cell, and sends the packet to the MITM, that will forward it.  
+
+From the bot:
+```kotlin
+ctx.downstream().write("BD#${randomCell.id}", unwrapped = true)
+```
+
+By this way, there is no need to implement the path finder, we simply take advantages of the client ;)  
+This code's currently working, now I have to edit the windows `host` file for redirect the ankama dns to the mitm local ip, and infect a random swf.  

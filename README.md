@@ -30,9 +30,9 @@ Sun, 20 Oct 2019 15:43:32 GMT -- Proxy/tcp [.]  [UPSTREAM]   [SENT]      ---> [P
 Sun, 20 Oct 2019 15:43:32 GMT -- Proxy/tcp [.]  [PROXY]      [FORWARDED] ---> [DOWNSTREAM]   : Af1|2|0||-1
 ```
 
-## Network parser
+## Network serializer/deserializer
 
-An easy way to parse packets. When the bot starts, all classes found on a given package are scanned and parsed automatically.  See [protocol/messages](https://github.com/Romain-P/Guinness-Bot/tree/master/guinness-bot/guinness-core/src/main/kotlin/com/guiness/bot/protocol/messages)  
+An easy way to parse and write packets. When the bot starts, all classes found on a given package are scanned and parsed automatically.  See [protocol/messages](https://github.com/Romain-P/Guinness-Bot/tree/master/guinness-bot/guinness-core/src/main/kotlin/com/guiness/bot/protocol/messages)  
   
 Let's take as example, the character list packet
 
@@ -88,4 +88,34 @@ Nested objects can be added. Annotate a nested object with `@Delimiter` allows t
 An easy way to intercept, forward, discard, or rewrite packets.  When the bot starts, controllers's handlers are loaded and mapped to the wanted packet automatically.  
 See [controllers/](https://github.com/Romain-P/Guinness-Bot/tree/master/guinness-bot/guinness-core/src/main/kotlin/com/guiness/bot/controllers/)  
   
-Let's take the `CharacterListMessage` as example.  
+Let's take the `CharacterListMessage` as example.  The following code intercept the `CharacterListMessage` and reponds automatically to the server with the chosen character (auto-login).
+
+```kotlin
+@Controller // annotate a class with @Controller so handlers will be retrieved and parsed automatically
+class LoginController {
+
+    @FromUpstream(then = StreamOperation.FORWARD)
+    fun onCharacterList(ctx: ProxyClientContext, msg: CharacterListMessage) {
+        val botCharacterName = ctx.botMightBeNull()?.account?.defaultCharacter?.name ?: return
+
+        val character = msg.characters.find { it.name == botCharacterName }
+
+        if (character != null)
+            ctx.upstream().write(SelectCharacterMessage(character.guid)) //auto select character
+    }
+}
+```
+
+In this example, we intercept the `CharacterListMessage` using a handler. All handlers have the same signature.  
+`fun {handlerName}(ctx: ProxyClientContext, msg: {MessageClassToIntercept}) {}`  
+
+Each handler must be annotated with one of the following annotation:
+ * `@FromUpstream`: intercept a message comming from ankama servers
+ * `@FromDownstream`: intercept a message comming from dofus.exe
+ * `@FromAnyStream`: intercept a message that can come from any side
+   
+Each annotation must define a `then` operation, which corresponds to the action done once the handler has been executed.  
+ * `then = StreamOperation.FORWARD`: the packet will be transmitted to the other stream
+ * `then = StreamOperation.DISCARD`: the packet won't be trasmitted
+ * `then = StreamOperation.MIRROR`: the packet will be resent to the source (like an echo)
+ 

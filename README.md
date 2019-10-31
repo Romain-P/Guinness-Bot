@@ -186,7 +186,8 @@ Also, packet delimiters are automatically handled, so don't worry about it.
   
 ### Delayed writes
 
-It is also possible to delay some packets, still without any effort
+It is also possible to delay some packets, still without any effort.  
+The stream api is non-blocking. So calling any function won't block the current thread.
 
 ```
 ctx.upstream().post("AxK0000", 5.seconds, unwrapped = true) /* will be sent after 5 seconds **/
@@ -199,3 +200,55 @@ ctx.upstream().delayedTransaction {
     later(SelectCharacterMessage(0), 1.seconds)     /* sent after 3500 ms */ 
 }
 ```
+
+## Script engine
+
+I tried to get involved in the general design of the bot. I wanted to make possible the implementation of new game features without polluting the code of the core, and also make possible to edit some behaviour without recompiling the bot. --on the fly  
+So it is possible to write `kotlin-script` using the [bot-api](https://github.com/Romain-P/Guinness-Bot/tree/master/guinness-bot/guinness-api/src/main/kotlin/com/guinness/api)
+
+A script looks like the following code:
+```kotlin
+import com.guinness.api.AIScript
+import com.guinness.api.IBot
+import com.guinness.api.entities.IMap
+
+class ScriptTest(val bot: IBot): AIScript(bot) {
+    override fun onMapChanged(previous: IMap?, new: IMap) {
+        println("message from script")
+        this.bot.session./** whatever you want to access **/
+    }
+}
+
+ScriptTest::class
+```
+
+I did not work a lot of the API because I don't have added enough game feature at this moment.  
+The list of event can be found in the [AIScript class](https://github.com/Romain-P/Guinness-Bot/blob/master/guinness-bot/guinness-api/src/main/kotlin/com/guinness/api/AIScript.kt). The list of available events should grow up in the future.  
+
+```kotlin
+open class AIScript(private val bot: IBot) {
+    open fun onWorldEnter() {}
+    open fun onMapChanged(previous: IMap?, new: IMap) {}
+}
+```
+
+### Add a script event
+
+Adding a new event would simply be done adding a new function in the `AIScript` and call it from a controller.  
+For example, this is how is implemeted the `onMapChanged` event:
+
+```kotlin
+@Controller
+class MovementController {
+
+    @FromUpstream(then = StreamOperation.FORWARD)
+    fun onMapChanged(ctx: ProxyClientContext, msg: MapDataMessage) {
+        val map = MapService.loadMap(msg.mapId, msg.date, msg.privateKey)
+
+        val previous = ctx.bot().session.map
+        ctx.bot().session.map = map
+        ctx.bot().spreadEvents { onMapChanged(previous, map) } /* fires this event to all scripts subscribed by the bot */
+    }
+}
+```
+

@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
     loadSingletonsEagerly()
 
     /* local tcp server bound on random available port */
-    Proxy.withHost("127.0.0.1")
+    Proxy.withHost("127.0.0.1", 5555)
         .withWorker(1, 4)
         .start()
 

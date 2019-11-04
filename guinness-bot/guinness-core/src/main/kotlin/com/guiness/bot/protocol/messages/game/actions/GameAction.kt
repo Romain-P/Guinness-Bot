@@ -7,6 +7,6 @@ import com.guiness.bot.protocol.annotations.StreamSource
 data class GameAction(
     var unknown: Long?,
     var actionId: Int,
-    var entityGuid: Long, /* character guid or mob group guid */
-    var data: String
+    var entityGuid: Long?, /* character guid or mob group guid */
+    var data: String?
 )

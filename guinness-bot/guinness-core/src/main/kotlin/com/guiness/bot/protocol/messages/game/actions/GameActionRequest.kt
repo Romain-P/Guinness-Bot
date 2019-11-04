@@ -8,5 +8,5 @@ import com.guiness.bot.protocol.annotations.StreamSource
 data class GameActionRequest(
     @Bytes(3)
     var actionId: Int,
-    var data: String
+    var data: String?
 )

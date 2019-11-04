@@ -52,9 +52,14 @@ class PacketReader {
         } else
             sharedIndex[0] += readExactly
 
+        val endIndex = when(readExactly) {
+            0       -> sharedIndex[0] - 1
+            else    -> readExactly
+        }
+
         return when (startIndex) {
             sharedIndex[0] - 1  -> null
-            else                -> packet.substring(startIndex, sharedIndex[0] - 1)
+            else                -> packet.substring(startIndex, endIndex)
         }
     }
 

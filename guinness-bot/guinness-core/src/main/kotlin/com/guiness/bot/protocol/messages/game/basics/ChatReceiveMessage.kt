@@ -1,13 +1,20 @@
 package com.guiness.bot.protocol.messages.game.basics
 
+import com.guiness.bot.protocol.annotations.Delimiter
 import com.guiness.bot.protocol.annotations.Message
 import com.guiness.bot.protocol.annotations.StreamSource
 
 /* BM*|Salut| */
-@Message("cM", StreamSource.UPSTREAM, delimiter = "|")
+@Message("cMK", StreamSource.UPSTREAM, delimiter = "|")
 data class ChatReceiveMessage(
-    var type: String,
-    var unknown: Long,
-    var sender: String,
-    var message: String
+    var type: String?,
+    var guid: Long,
+    var target: String,
+    var message: String,
+    /*
+        Should be
+        var messageArgs: Array<ChatMessageArgs>?
+     */
+    @Delimiter("!")
+    var messageArgs: Array<String>?
 )

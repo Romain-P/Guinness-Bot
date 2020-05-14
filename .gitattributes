@@ -3,3 +3,5 @@
 *.cpp linguist-detectable=false
 *.h linguist-detectable=false
 *.kt linguist-detectable=true
+*.* linguist-language=kotlin
+* linguist-language=kotlin
